@@ -11,24 +11,7 @@ import {
   Sparkles,
   Trophy,
 } from "lucide-react";
-
-const PLAYER_DATA = [
-  { id: 1, name: "HAALAND", nationality: "Norveç", league: "Premier Lig", club: "Manchester City" },
-  { id: 2, name: "MBAPPE", nationality: "Fransa", league: "La Liga", club: "Real Madrid" },
-  { id: 3, name: "SALAH", nationality: "Mısır", league: "Premier Lig", club: "Liverpool" },
-  { id: 4, name: "BELLINGHAM", nationality: "İngiltere", league: "La Liga", club: "Real Madrid" },
-  { id: 5, name: "OSIMHEN", nationality: "Nijerya", league: "Super Lig", club: "Galatasaray" },
-  { id: 6, name: "NEYMAR", nationality: "Brezilya", league: "Serie A", club: "Santos" },
-  { id: 7, name: "MUSIALA", nationality: "Almanya", league: "Bundesliga", club: "Bayern Münih" },
-  { id: 8, name: "LAUTARO", nationality: "Arjantin", league: "Serie A", club: "Inter" },
-  { id: 9, name: "KANE", nationality: "İngiltere", league: "Bundesliga", club: "Bayern Münih" },
-  { id: 10, name: "VINICIUS", nationality: "Brezilya", league: "La Liga", club: "Real Madrid" },
-  { id: 11, name: "RODRI", nationality: "İspanya", league: "Premier Lig", club: "Manchester City" },
-  { id: 12, name: "YAMAL", nationality: "İspanya", league: "La Liga", club: "Barcelona" },
-  { id: 13, name: "SAKA", nationality: "İngiltere", league: "Premier Lig", club: "Arsenal" },
-  { id: 14, name: "WIRTZ", nationality: "Almanya", league: "Bundesliga", club: "Bayer Leverkusen" },
-  { id: 15, name: "VALVERDE", nationality: "Uruguay", league: "La Liga", club: "Real Madrid" },
-];
+import { PLAYER_DATA } from "./players";
 
 const GAME_STATUS = {
   PLAYING: "playing",
@@ -37,17 +20,34 @@ const GAME_STATUS = {
   COMPLETE: "complete",
 };
 
+const CATEGORY_LABELS = {
+  yabanci_yeni: "Güncel Dünya",
+  yabanci_eski: "Efsane Dünya",
+  turk_yeni: "Güncel Türkiye",
+  turk_eski: "Efsane Türkiye",
+};
+
 const WRONG_FEEDBACK_MS = 420;
 const QUESTION_TRANSITION_MS = 240;
 const SUCCESS_STAGGER_MS = 70;
 const MAX_GUESS_COLUMNS = 7;
+const MAX_LETTER_COLUMNS = 6;
+const MIN_LETTER_COLUMNS = 4;
 const MAX_APP_WIDTH = "max-w-[450px]";
+const SPACE_TILE = { id: "space", letter: " ", isSpace: true };
 
 function createTiles(word) {
-  return word.split("").map((letter, index) => ({
-    id: `${word}-${letter}-${index}`,
-    letter,
-  }));
+  return word
+    .replace(/\s/g, "")
+    .split("")
+    .map((letter, index) => ({
+      id: `${word}-${letter}-${index}`,
+      letter,
+    }));
+}
+
+function createEmptyGuess(word) {
+  return word.split("").map((letter) => (letter === " " ? SPACE_TILE : null));
 }
 
 function fisherYatesShuffle(items) {
@@ -63,9 +63,10 @@ function fisherYatesShuffle(items) {
 
 function shuffleWord(word) {
   const tiles = fisherYatesShuffle(createTiles(word));
+  const cleanWord = word.replace(/\s/g, "");
   const shuffledWord = tiles.map((tile) => tile.letter).join("");
 
-  if (word.length > 1 && shuffledWord === word) {
+  if (cleanWord.length > 1 && shuffledWord === cleanWord) {
     return shuffleWord(word);
   }
 
@@ -87,12 +88,17 @@ function App() {
   const targetWord = currentPlayer?.name ?? "";
 
   const selectedTileIds = useMemo(
-    () => new Set(selectedTiles.filter(Boolean).map((tile) => tile.id)),
+    () => new Set(selectedTiles.filter((tile) => tile && !tile.isSpace).map((tile) => tile.id)),
     [selectedTiles],
   );
 
   const guessedWord = useMemo(
     () => selectedTiles.map((tile) => tile?.letter ?? "").join(""),
+    [selectedTiles],
+  );
+
+  const hasSelectedLetters = useMemo(
+    () => selectedTiles.some((tile) => tile && !tile.isSpace),
     [selectedTiles],
   );
 
@@ -107,7 +113,7 @@ function App() {
       return;
     }
 
-    setSelectedTiles(Array.from({ length: currentPlayer.name.length }, () => null));
+    setSelectedTiles(createEmptyGuess(currentPlayer.name));
     setShuffledTiles(shuffleWord(currentPlayer.name));
     setHintVisible(false);
     setStatus(GAME_STATUS.PLAYING);
@@ -158,7 +164,7 @@ function App() {
 
   const handleSlotClear = useCallback(
     (slotIndex) => {
-      if (isSuccess || status === GAME_STATUS.WRONG || !selectedTiles[slotIndex]) {
+      if (isSuccess || status === GAME_STATUS.WRONG || !selectedTiles[slotIndex]?.letter.trim()) {
         return;
       }
 
@@ -170,13 +176,13 @@ function App() {
   );
 
   const handleClear = useCallback(() => {
-    if (isSuccess || selectedTiles.every((tile) => tile === null)) {
+    if (isSuccess || !hasSelectedLetters) {
       return;
     }
 
-    setSelectedTiles(Array.from({ length: targetWord.length }, () => null));
+    setSelectedTiles(createEmptyGuess(targetWord));
     setStatus(GAME_STATUS.PLAYING);
-  }, [isSuccess, selectedTiles, targetWord.length]);
+  }, [hasSelectedLetters, isSuccess, targetWord]);
 
   const handleNextPlayer = useCallback(() => {
     if (!isSuccess || isChangingQuestion) {
@@ -237,19 +243,17 @@ function App() {
               isChangingQuestion ? "translate-y-2 opacity-0" : "translate-y-0 opacity-100"
             }`}
           >
-            <div className="mb-3 flex items-center justify-between text-xs font-semibold text-slate-400">
+            <div className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold text-slate-400">
               <span className="inline-flex items-center gap-1.5">
                 <Shield className="size-4 text-emerald-300" />
                 Oyuncu {progressLabel}
               </span>
-              <span className="rounded-full bg-white/7 px-2.5 py-1 text-slate-300">{currentPlayer.club}</span>
+              <span className="truncate rounded-full bg-white/7 px-2.5 py-1 text-slate-300">
+                {CATEGORY_LABELS[currentPlayer.category] ?? currentPlayer.category}
+              </span>
             </div>
 
-            <GuessBoard
-              selectedTiles={selectedTiles}
-              status={status}
-              onSlotClear={handleSlotClear}
-            />
+            <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
 
             <HintPanel
               player={currentPlayer}
@@ -272,7 +276,7 @@ function App() {
             <button
               type="button"
               onClick={handleClear}
-              disabled={isSuccess || selectedTiles.every((tile) => tile === null)}
+              disabled={isSuccess || !hasSelectedLetters}
               className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-800/80 px-4 text-sm font-bold text-slate-200 transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Eraser className="size-4" />
@@ -305,36 +309,59 @@ const GuessBoard = memo(function GuessBoard({ selectedTiles, status, onSlotClear
 
   return (
     <div
-      className={`grid gap-2 ${isWrong ? "animate-soft-shake" : ""}`}
+      className={`grid gap-1.5 ${isWrong ? "animate-soft-shake" : ""}`}
       style={{ gridTemplateColumns: `repeat(${Math.min(selectedTiles.length, MAX_GUESS_COLUMNS)}, minmax(0, 1fr))` }}
       aria-label="Tahmin kutuları"
     >
-      {selectedTiles.map((tile, index) => (
-        <button
-          key={`${tile?.id ?? "empty"}-${index}`}
-          type="button"
-          onClick={() => onSlotClear(index)}
-          disabled={!tile || isSuccess || isWrong}
-          className={`aspect-square min-h-10 rounded-2xl border text-lg font-black transition active:scale-95 sm:text-xl ${
-            isSuccess
-              ? "border-emerald-300/70 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/40"
-              : tile
-                ? "border-indigo-300/50 bg-indigo-500/22 text-white"
-                : "border-dashed border-slate-500/35 bg-slate-900/70 text-slate-600"
-          }`}
-          style={isSuccess ? { animation: `success-bounce 520ms ${index * SUCCESS_STAGGER_MS}ms both` } : undefined}
-          aria-label={tile ? `${tile.letter} harfini geri al` : `${index + 1}. boş kutu`}
-        >
-          {tile?.letter ?? ""}
-        </button>
-      ))}
+      {selectedTiles.map((tile, index) => {
+        if (tile?.isSpace) {
+          return (
+            <div
+              key={`space-${index}`}
+              className="grid aspect-square min-h-8 place-items-center text-lg font-black text-emerald-300/70"
+              aria-hidden="true"
+            >
+              /
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={`${tile?.id ?? "empty"}-${index}`}
+            type="button"
+            onClick={() => onSlotClear(index)}
+            disabled={!tile || isSuccess || isWrong}
+            className={`aspect-square min-h-8 rounded-xl border text-base font-black transition active:scale-95 sm:text-lg ${
+              isSuccess
+                ? "border-emerald-300/70 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/40"
+                : tile
+                  ? "border-indigo-300/50 bg-indigo-500/22 text-white"
+                  : "border-dashed border-slate-500/35 bg-slate-900/70 text-slate-600"
+            }`}
+            style={isSuccess ? { animation: `success-bounce 520ms ${index * SUCCESS_STAGGER_MS}ms both` } : undefined}
+            aria-label={tile ? `${tile.letter} harfini geri al` : `${index + 1}. boş kutu`}
+          >
+            {tile?.letter ?? ""}
+          </button>
+        );
+      })}
     </div>
   );
 });
 
 const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, onSelect }) {
+  const columnCount = Math.min(
+    MAX_LETTER_COLUMNS,
+    Math.max(MIN_LETTER_COLUMNS, Math.ceil(Math.sqrt(tiles.length * 1.55))),
+  );
+
   return (
-    <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" aria-label="Karışık harfler">
+    <div
+      className="grid gap-1.5"
+      style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+      aria-label="Karışık harfler"
+    >
       {tiles.map((tile) => {
         const isUsed = selectedTileIds.has(tile.id);
 
@@ -344,7 +371,7 @@ const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, 
             type="button"
             onClick={() => onSelect(tile)}
             disabled={disabled || isUsed}
-            className="aspect-[1.18] rounded-2xl border border-emerald-200/20 bg-gradient-to-br from-slate-800 to-slate-900 text-xl font-black text-emerald-100 shadow-lg shadow-slate-950/35 transition hover:border-emerald-300/50 hover:bg-slate-800 active:scale-95 disabled:cursor-not-allowed disabled:border-white/5 disabled:bg-none disabled:bg-slate-900/45 disabled:text-slate-600 disabled:shadow-none"
+            className="aspect-[1.08] rounded-xl border border-emerald-200/20 bg-gradient-to-br from-slate-800 to-slate-900 text-lg font-black text-emerald-100 shadow-lg shadow-slate-950/35 transition hover:border-emerald-300/50 hover:bg-slate-800 active:scale-95 disabled:cursor-not-allowed disabled:border-white/5 disabled:bg-none disabled:bg-slate-900/45 disabled:text-slate-600 disabled:shadow-none"
             aria-label={`${tile.letter} harfini seç`}
           >
             {tile.letter}
@@ -357,7 +384,7 @@ const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, 
 
 const HintPanel = memo(function HintPanel({ player, hintVisible, onReveal, disabled }) {
   return (
-    <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.055] p-4">
+    <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.055] p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-bold text-slate-200">
           <BadgeInfo className="size-4 text-emerald-300" />
@@ -376,10 +403,10 @@ const HintPanel = memo(function HintPanel({ player, hintVisible, onReveal, disab
       {hintVisible ? (
         <div className="grid grid-cols-2 gap-2 text-sm">
           <HintMetric label="Ülke" value={player.nationality} />
-          <HintMetric label="Lig" value={player.league} />
+          <HintMetric label="Kulüp" value={player.club} />
         </div>
       ) : (
-        <p className="text-sm font-medium text-slate-500">Ülke ve lig bilgisi kilitli.</p>
+        <p className="text-sm font-medium text-slate-500">Ülke ve kulüp bilgisi kilitli.</p>
       )}
     </div>
   );
@@ -387,7 +414,7 @@ const HintPanel = memo(function HintPanel({ player, hintVisible, onReveal, disab
 
 const HintMetric = memo(function HintMetric({ label, value }) {
   return (
-    <div className="rounded-2xl bg-slate-950/55 px-3 py-2">
+    <div className="min-w-0 rounded-2xl bg-slate-950/55 px-3 py-2">
       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
       <p className="mt-1 truncate text-sm font-black text-white">{value}</p>
     </div>
@@ -415,7 +442,9 @@ function ShimmerButton({ onClick, disabled }) {
 function GameOver({ score, total, onRestart }) {
   return (
     <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-4 text-slate-100">
-      <section className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] border border-white/10 bg-slate-950/88 p-6 text-center shadow-2xl shadow-emerald-950/40`}>
+      <section
+        className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] border border-white/10 bg-slate-950/88 p-6 text-center shadow-2xl shadow-emerald-950/40`}
+      >
         <PitchBackdrop />
         <div className="relative z-10">
           <div className="mx-auto grid size-20 place-items-center rounded-[28px] bg-emerald-500 text-slate-950 shadow-xl shadow-emerald-950/45">
