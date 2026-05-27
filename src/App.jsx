@@ -87,13 +87,26 @@ const SPACE_TILE = { id: "space", letter: " ", isSpace: true };
 const TILE_ROTATIONS = ["-1.6deg", "1.1deg", "-0.9deg", "1.8deg", "-1.2deg", "0.7deg", "1.4deg"];
 
 function createTiles(word) {
-  return word
-    .replace(/\s/g, "")
-    .split("")
-    .map((letter, index) => ({
-      id: `${word}-${letter}-${index}`,
+  const tiles = [];
+  let cleanIndex = 0;
+  let wordIndex = 0;
+
+  word.split("").forEach((letter) => {
+    if (letter === " ") {
+      wordIndex += 1;
+      return;
+    }
+
+    tiles.push({
+      cleanIndex,
+      id: `${word}-${letter}-${cleanIndex}`,
       letter,
-    }));
+      wordIndex,
+    });
+    cleanIndex += 1;
+  });
+
+  return tiles;
 }
 
 function createEmptyGuess(word) {
@@ -111,16 +124,49 @@ function fisherYatesShuffle(items) {
   return shuffled;
 }
 
-function shuffleWord(word) {
-  const tiles = fisherYatesShuffle(createTiles(word));
-  const cleanWord = word.replace(/\s/g, "");
-  const shuffledWord = tiles.map((tile) => tile.letter).join("");
-
-  if (cleanWord.length > 1 && shuffledWord === cleanWord) {
-    return shuffleWord(word);
+function shuffleTilesUntilDifferent(tiles) {
+  if (tiles.length <= 1 || new Set(tiles.map((tile) => tile.letter)).size <= 1) {
+    return [...tiles];
   }
 
-  return tiles;
+  const shuffled = fisherYatesShuffle(tiles);
+  const originalWord = tiles.map((tile) => tile.letter).join("");
+  const shuffledWord = shuffled.map((tile) => tile.letter).join("");
+
+  if (shuffledWord === originalWord) {
+    return shuffleTilesUntilDifferent(tiles);
+  }
+
+  return shuffled;
+}
+
+function shuffleWord(word, difficultyId = "hard") {
+  const tiles = createTiles(word);
+  const hasMultipleWords = word.includes(" ");
+
+  if (difficultyId === "easy" && hasMultipleWords) {
+    const groupedTiles = word.split(" ").map((_, wordIndex) => tiles.filter((tile) => tile.wordIndex === wordIndex));
+    return groupedTiles.flatMap((wordTiles) => shuffleTilesUntilDifferent(wordTiles));
+  }
+
+  return shuffleTilesUntilDifferent(tiles);
+}
+
+function getWordIndexAtSlot(word, slotIndex) {
+  return word
+    .slice(0, Math.max(0, slotIndex))
+    .split("")
+    .filter((letter) => letter === " ").length;
+}
+
+function getActiveWordIndex(word, selectedTiles) {
+  const nextOpenIndex = selectedTiles.findIndex((tile) => tile === null);
+
+  if (nextOpenIndex !== -1) {
+    return getWordIndexAtSlot(word, nextOpenIndex);
+  }
+
+  return Math.max(0, word.split(" ").length - 1);
 }
 
 function getModePlayers(mode) {
@@ -201,6 +247,19 @@ function App() {
   const hasSelectedLetters = useMemo(
     () => selectedTiles.some((tile) => tile && !tile.isSpace),
     [selectedTiles],
+  );
+
+  const usesStagedKeyboard = difficultyStage.id === "easy" && targetWord.includes(" ");
+  const activeWordIndex = useMemo(
+    () => getActiveWordIndex(targetWord, selectedTiles),
+    [selectedTiles, targetWord],
+  );
+  const keyboardTiles = useMemo(
+    () =>
+      usesStagedKeyboard
+        ? shuffledTiles.filter((tile) => tile.wordIndex === activeWordIndex)
+        : shuffledTiles,
+    [activeWordIndex, shuffledTiles, usesStagedKeyboard],
   );
 
   const progressLabel = useMemo(
@@ -353,8 +412,8 @@ function App() {
       return;
     }
 
-    setShuffledTiles(shuffleWord(targetWord));
-  }, [isSuccess, status, targetWord]);
+    setShuffledTiles(shuffleWord(targetWord, difficultyStage.id));
+  }, [difficultyStage.id, isSuccess, status, targetWord]);
 
   const handleNextPlayer = useCallback(() => {
     if (!isSuccess || isChangingQuestion) {
@@ -392,7 +451,7 @@ function App() {
     }
 
     setSelectedTiles(createEmptyGuess(currentPlayer.name));
-    setShuffledTiles(shuffleWord(currentPlayer.name));
+    setShuffledTiles(shuffleWord(currentPlayer.name, difficultyStage.id));
     setHintLevel(0);
     setTimeLeft(QUESTION_SECONDS);
     setStatus(GAME_STATUS.PLAYING);
@@ -466,7 +525,7 @@ function App() {
       }
 
       const keyCandidates = new Set([event.key.toUpperCase(), event.key.toLocaleUpperCase("tr-TR")]);
-      const nextTile = shuffledTiles.find((tile) => keyCandidates.has(tile.letter) && !selectedTileIds.has(tile.id));
+      const nextTile = keyboardTiles.find((tile) => keyCandidates.has(tile.letter) && !selectedTileIds.has(tile.id));
 
       if (nextTile) {
         event.preventDefault();
@@ -476,7 +535,7 @@ function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleBackspace, handleTileSelect, selectedMode, selectedTileIds, shuffledTiles, status]);
+  }, [handleBackspace, handleTileSelect, keyboardTiles, selectedMode, selectedTileIds, status]);
 
   useEffect(() => {
     if (!levelUpMessage) {
@@ -576,7 +635,7 @@ function App() {
             disabled={isSuccess || status === GAME_STATUS.WRONG}
             onSelect={handleTileSelect}
             selectedTileIds={selectedTileIds}
-            tiles={shuffledTiles}
+            tiles={keyboardTiles}
           />
 
           <div className="mt-4 grid grid-cols-[1fr_1.4fr] gap-3">
@@ -596,7 +655,7 @@ function App() {
               <button
                 type="button"
                 onClick={handleShuffle}
-                disabled={status === GAME_STATUS.WRONG || !shuffledTiles.length}
+                disabled={status === GAME_STATUS.WRONG || !keyboardTiles.length}
                 className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_28px_rgba(16,185,129,0.32)] transition duration-300 ease-out hover:bg-emerald-400 active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-500/35 disabled:text-emerald-950/60"
               >
                 <Shuffle className="size-4" />
