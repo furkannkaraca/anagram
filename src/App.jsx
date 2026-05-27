@@ -5,9 +5,9 @@ import {
   Eraser,
   Flame,
   Goal,
-  Lightbulb,
   RefreshCcw,
   Shield,
+  Shuffle,
   Sparkles,
   Trophy,
 } from "lucide-react";
@@ -18,13 +18,6 @@ const GAME_STATUS = {
   WRONG: "wrong",
   SUCCESS: "success",
   COMPLETE: "complete",
-};
-
-const CATEGORY_LABELS = {
-  yabanci_yeni: "Güncel Dünya",
-  yabanci_eski: "Efsane Dünya",
-  turk_yeni: "Güncel Türkiye",
-  turk_eski: "Efsane Türkiye",
 };
 
 const WRONG_FEEDBACK_MS = 420;
@@ -184,6 +177,14 @@ function App() {
     setStatus(GAME_STATUS.PLAYING);
   }, [hasSelectedLetters, isSuccess, targetWord]);
 
+  const handleShuffle = useCallback(() => {
+    if (!targetWord || isSuccess || status === GAME_STATUS.WRONG) {
+      return;
+    }
+
+    setShuffledTiles(shuffleWord(targetWord));
+  }, [isSuccess, status, targetWord]);
+
   const handleNextPlayer = useCallback(() => {
     if (!isSuccess || isChangingQuestion) {
       return;
@@ -248,9 +249,7 @@ function App() {
                 <Shield className="size-4 text-emerald-300" />
                 Oyuncu {progressLabel}
               </span>
-              <span className="truncate rounded-full bg-white/7 px-2.5 py-1 text-slate-300">
-                {CATEGORY_LABELS[currentPlayer.category] ?? currentPlayer.category}
-              </span>
+              <span className="rounded-full bg-white/7 px-2.5 py-1 text-slate-300">Anagram</span>
             </div>
 
             <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
@@ -288,12 +287,12 @@ function App() {
             ) : (
               <button
                 type="button"
-                onClick={() => setHintVisible(true)}
-                disabled={hintVisible}
-                className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-indigo-500 px-4 text-sm font-black text-white shadow-lg shadow-indigo-950/40 transition hover:bg-indigo-400 active:scale-95 disabled:cursor-not-allowed disabled:bg-indigo-500/35 disabled:text-indigo-100/60"
+                onClick={handleShuffle}
+                disabled={status === GAME_STATUS.WRONG || !shuffledTiles.length}
+                className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 text-sm font-black text-slate-950 shadow-lg shadow-emerald-950/40 transition hover:bg-emerald-400 active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-500/35 disabled:text-emerald-950/60"
               >
-                <Lightbulb className="size-4" />
-                İpucu Al
+                <Shuffle className="size-4" />
+                Karıştır
               </button>
             )}
           </div>
@@ -337,7 +336,7 @@ const GuessBoard = memo(function GuessBoard({ selectedTiles, status, onSlotClear
                 ? "border-emerald-300/70 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/40"
                 : tile
                   ? "border-indigo-300/50 bg-indigo-500/22 text-white"
-                  : "border-dashed border-slate-500/35 bg-slate-900/70 text-slate-600"
+                  : "border-dashed border-emerald-300/55 bg-emerald-500/[0.11] text-emerald-100 shadow-inner shadow-emerald-950/30"
             }`}
             style={isSuccess ? { animation: `success-bounce 520ms ${index * SUCCESS_STAGGER_MS}ms both` } : undefined}
             aria-label={tile ? `${tile.letter} harfini geri al` : `${index + 1}. boş kutu`}
@@ -358,8 +357,8 @@ const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, 
 
   return (
     <div
-      className="grid gap-1.5"
-      style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }}
+      className="mx-auto grid w-fit max-w-full justify-center gap-1.5"
+      style={{ gridTemplateColumns: `repeat(${columnCount}, minmax(42px, 54px))` }}
       aria-label="Karışık harfler"
     >
       {tiles.map((tile) => {
