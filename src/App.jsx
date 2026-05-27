@@ -67,6 +67,7 @@ function shuffleWord(word) {
 }
 
 function App() {
+  const [players, setPlayers] = useState(() => fisherYatesShuffle(PLAYER_DATA));
   const [playerIndex, setPlayerIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedTiles, setSelectedTiles] = useState([]);
@@ -75,7 +76,7 @@ function App() {
   const [hintVisible, setHintVisible] = useState(false);
   const [isChangingQuestion, setIsChangingQuestion] = useState(false);
 
-  const currentPlayer = PLAYER_DATA[playerIndex];
+  const currentPlayer = players[playerIndex];
   const isComplete = status === GAME_STATUS.COMPLETE;
   const isSuccess = status === GAME_STATUS.SUCCESS;
   const targetWord = currentPlayer?.name ?? "";
@@ -96,8 +97,8 @@ function App() {
   );
 
   const progressLabel = useMemo(
-    () => `${Math.min(playerIndex + 1, PLAYER_DATA.length)} / ${PLAYER_DATA.length}`,
-    [playerIndex],
+    () => `${Math.min(playerIndex + 1, players.length)} / ${players.length}`,
+    [playerIndex, players.length],
   );
 
   useEffect(() => {
@@ -194,13 +195,14 @@ function App() {
     window.setTimeout(() => {
       setPlayerIndex((currentIndex) => {
         const nextIndex = currentIndex + 1;
-        return nextIndex >= PLAYER_DATA.length ? PLAYER_DATA.length : nextIndex;
+        return nextIndex >= players.length ? players.length : nextIndex;
       });
       setIsChangingQuestion(false);
     }, QUESTION_TRANSITION_MS);
-  }, [isChangingQuestion, isSuccess]);
+  }, [isChangingQuestion, isSuccess, players.length]);
 
   const handleRestart = useCallback(() => {
+    setPlayers(fisherYatesShuffle(PLAYER_DATA));
     setPlayerIndex(0);
     setScore(0);
     setStatus(GAME_STATUS.PLAYING);
@@ -208,7 +210,7 @@ function App() {
   }, []);
 
   if (isComplete) {
-    return <GameOver score={score} total={PLAYER_DATA.length} onRestart={handleRestart} />;
+    return <GameOver score={score} total={players.length} onRestart={handleRestart} />;
   }
 
   return (
