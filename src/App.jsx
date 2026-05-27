@@ -8,6 +8,7 @@ import {
   Goal,
   Heart,
   History,
+  House,
   RefreshCw,
   RefreshCcw,
   Sparkles,
@@ -596,7 +597,18 @@ function App() {
               </div>
             </div>
 
-            <ScoreBadge score={score} />
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleMenu}
+                className="grid size-11 place-items-center rounded-2xl bg-black/16 text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.14)] backdrop-blur-xl transition duration-300 ease-out hover:bg-white/[0.1] hover:text-white active:scale-95"
+                aria-label="Ana menüye dön"
+                title="Ana menüye dön"
+              >
+                <House className="size-5" />
+              </button>
+              <ScoreBadge score={score} />
+            </div>
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2 rounded-full bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
