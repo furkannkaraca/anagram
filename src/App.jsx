@@ -184,6 +184,17 @@ function getDifficultyStage(score) {
   return DIFFICULTY_STAGES[2];
 }
 
+function getLetterColumnCount(tileCount) {
+  if (tileCount <= MAX_LETTER_COLUMNS) {
+    return Math.max(1, tileCount);
+  }
+
+  return Math.min(
+    MAX_LETTER_COLUMNS,
+    Math.max(MIN_LETTER_COLUMNS, Math.ceil(Math.sqrt(tileCount * 1.55))),
+  );
+}
+
 function selectNextPlayer(playerPool, usedPlayerIds, score) {
   const stage = getDifficultyStage(score);
   const unplayedPlayers = playerPool.filter((player) => !usedPlayerIds.has(player.id));
@@ -875,10 +886,7 @@ const GuessBoard = memo(function GuessBoard({ selectedTiles, status, onSlotClear
 });
 
 const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, onSelect }) {
-  const columnCount = Math.min(
-    MAX_LETTER_COLUMNS,
-    Math.max(MIN_LETTER_COLUMNS, Math.ceil(Math.sqrt(tiles.length * 1.55))),
-  );
+  const columnCount = getLetterColumnCount(tiles.length);
 
   return (
     <div
