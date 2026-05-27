@@ -23,7 +23,6 @@ const GAME_STATUS = {
 const WRONG_FEEDBACK_MS = 420;
 const QUESTION_TRANSITION_MS = 240;
 const SUCCESS_STAGGER_MS = 70;
-const MAX_GUESS_COLUMNS = 7;
 const MAX_LETTER_COLUMNS = 6;
 const MIN_LETTER_COLUMNS = 4;
 const MAX_APP_WIDTH = "max-w-[450px]";
@@ -307,46 +306,58 @@ function App() {
 const GuessBoard = memo(function GuessBoard({ selectedTiles, status, onSlotClear }) {
   const isSuccess = status === GAME_STATUS.SUCCESS;
   const isWrong = status === GAME_STATUS.WRONG;
+  const rows = selectedTiles.reduce(
+    (wordRows, tile, index) => {
+      if (tile?.isSpace) {
+        if (wordRows.at(-1).length > 0) {
+          wordRows.push([]);
+        }
+        return wordRows;
+      }
+
+      wordRows.at(-1).push({ tile, index });
+      return wordRows;
+    },
+    [[]],
+  ).filter((row) => row.length > 0);
 
   return (
     <div
-      className={`grid gap-1.5 ${isWrong ? "animate-soft-shake" : ""}`}
-      style={{ gridTemplateColumns: `repeat(${Math.min(selectedTiles.length, MAX_GUESS_COLUMNS)}, minmax(0, 1fr))` }}
+      className={`flex min-h-[7rem] flex-col items-center justify-center gap-2 ${isWrong ? "animate-soft-shake" : ""}`}
       aria-label="Tahmin kutuları"
     >
-      {selectedTiles.map((tile, index) => {
-        if (tile?.isSpace) {
-          return (
-            <div
-              key={`space-${index}`}
-              className="grid aspect-square min-h-8 place-items-center text-lg font-black text-emerald-300/70"
-              aria-hidden="true"
+      {rows.map((row, rowIndex) => (
+        <div
+          key={`guess-row-${rowIndex}`}
+          className="grid w-full max-w-full justify-center gap-1.5"
+          style={{
+            gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`,
+            width: `min(100%, ${row.length * 2.6}rem)`,
+          }}
+        >
+          {row.map(({ tile, index }) => (
+            <button
+              key={`${tile?.id ?? "empty"}-${index}`}
+              type="button"
+              onClick={() => onSlotClear(index)}
+              disabled={!tile || isSuccess || isWrong}
+              className={`aspect-square min-h-7 rounded-xl border font-black transition active:scale-95 ${
+                row.length > 10 ? "text-xs sm:text-sm" : "text-base sm:text-lg"
+              } ${
+                isSuccess
+                  ? "border-emerald-300/70 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/40"
+                  : tile
+                    ? "border-indigo-300/50 bg-indigo-500/22 text-white"
+                    : "border-dashed border-emerald-300/55 bg-emerald-500/[0.11] text-emerald-100 shadow-inner shadow-emerald-950/30"
+              }`}
+              style={isSuccess ? { animation: `success-bounce 520ms ${index * SUCCESS_STAGGER_MS}ms both` } : undefined}
+              aria-label={tile ? `${tile.letter} harfini geri al` : `${index + 1}. boş kutu`}
             >
-              /
-            </div>
-          );
-        }
-
-        return (
-          <button
-            key={`${tile?.id ?? "empty"}-${index}`}
-            type="button"
-            onClick={() => onSlotClear(index)}
-            disabled={!tile || isSuccess || isWrong}
-            className={`aspect-square min-h-8 rounded-xl border text-base font-black transition active:scale-95 sm:text-lg ${
-              isSuccess
-                ? "border-emerald-300/70 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/40"
-                : tile
-                  ? "border-indigo-300/50 bg-indigo-500/22 text-white"
-                  : "border-dashed border-emerald-300/55 bg-emerald-500/[0.11] text-emerald-100 shadow-inner shadow-emerald-950/30"
-            }`}
-            style={isSuccess ? { animation: `success-bounce 520ms ${index * SUCCESS_STAGGER_MS}ms both` } : undefined}
-            aria-label={tile ? `${tile.letter} harfini geri al` : `${index + 1}. boş kutu`}
-          >
-            {tile?.letter ?? ""}
-          </button>
-        );
-      })}
+              {tile?.letter ?? ""}
+            </button>
+          ))}
+        </div>
+      ))}
     </div>
   );
 });
