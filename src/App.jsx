@@ -4,16 +4,15 @@ import {
   BadgeInfo,
   ChevronRight,
   Clock3,
-  Eraser,
   Flame,
   Goal,
   Heart,
   History,
+  RefreshCw,
   RefreshCcw,
-  Shield,
-  Shuffle,
   Sparkles,
   Star,
+  Trash2,
   Trophy,
   Users,
   Zap,
@@ -56,21 +55,21 @@ const DIFFICULTY_STAGES = [
     id: "easy",
     label: "Amatör",
     range: "0-5",
-    badgeClass: "border-emerald-300/25 bg-emerald-500/12 text-emerald-200",
+    badgeClass: "bg-emerald-500/15 text-emerald-100 shadow-[0_0_18px_rgba(52,211,153,0.2)]",
     dotClass: "bg-emerald-400",
   },
   {
     id: "medium",
     label: "Profesyonel",
     range: "6-15",
-    badgeClass: "border-amber-300/25 bg-amber-500/12 text-amber-100",
+    badgeClass: "bg-amber-500/15 text-amber-100 shadow-[0_0_18px_rgba(251,191,36,0.18)]",
     dotClass: "bg-amber-300",
   },
   {
     id: "hard",
     label: "Efsane",
     range: "16+",
-    badgeClass: "border-red-300/25 bg-red-500/12 text-red-100",
+    badgeClass: "bg-red-500/15 text-red-100 shadow-[0_0_18px_rgba(248,113,113,0.18)]",
     dotClass: "bg-red-400",
   },
 ];
@@ -260,11 +259,6 @@ function App() {
         ? shuffledTiles.filter((tile) => tile.wordIndex === activeWordIndex)
         : shuffledTiles,
     [activeWordIndex, shuffledTiles, usesStagedKeyboard],
-  );
-
-  const progressLabel = useMemo(
-    () => `${Math.min(playerIndex + 1, players.length)} / ${players.length}`,
-    [playerIndex, players.length],
   );
 
   const startMode = useCallback(
@@ -574,15 +568,15 @@ function App() {
   return (
     <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
       <section
-        className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden border-x border-emerald-200/10 bg-[#03120f]/82 shadow-[0_0_90px_rgba(16,185,129,0.18)] backdrop-blur-xl sm:h-[min(860px,100dvh)] sm:rounded-[28px] sm:border`}
+        className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.32),_rgba(6,78,59,0.24)_34%,_rgba(2,6,23,0.98)_76%)] shadow-[0_0_110px_rgba(16,185,129,0.28)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}
       >
         <PitchBackdrop />
         {levelUpMessage ? <LevelUpToast message={levelUpMessage} /> : null}
 
-        <header className="relative z-10 shrink-0 px-4 pb-3 pt-4">
+        <header className="relative z-10 shrink-0 px-4 pb-2 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="grid size-11 place-items-center rounded-2xl border border-emerald-300/20 bg-emerald-500/15 text-emerald-300 shadow-lg shadow-emerald-950/40">
+              <div className="grid size-11 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200 shadow-[0_0_26px_rgba(16,185,129,0.25)] backdrop-blur-xl">
                 <Goal className="size-6" />
               </div>
               <div>
@@ -594,10 +588,10 @@ function App() {
             <ScoreBadge score={score} />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-full bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
             <Lives lives={lives} />
             <DifficultyBadge stage={difficultyStage} />
-            <span className="truncate rounded-full border border-white/10 bg-white/7 px-3 py-1.5 text-xs font-bold text-slate-300">
+            <span className="min-w-0 truncate rounded-full bg-white/5 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-slate-200">
               {selectedMode.title}
             </span>
           </div>
@@ -611,15 +605,9 @@ function App() {
               isChangingQuestion ? "translate-y-2 opacity-0" : "translate-y-0 opacity-100"
             }`}
           >
-            <div className="mb-3 flex items-center justify-between gap-2 text-xs font-semibold text-slate-400">
-              <span className="inline-flex items-center gap-1.5">
-                <Shield className="size-4 text-emerald-300" />
-                Oyuncu {progressLabel}
-              </span>
-              <span className="rounded-full bg-white/7 px-2.5 py-1 text-slate-300">Anagram</span>
+            <div className="relative rounded-[34px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.48),_rgba(6,78,59,0.28)_48%,_rgba(2,6,23,0.36)_100%)] px-3 py-8 shadow-[inset_0_0_54px_rgba(16,185,129,0.2),0_22px_60px_rgba(0,0,0,0.26)]">
+              <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
             </div>
-
-            <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
 
             <HintPanel
               disabled={hintLevel >= 2 || isSuccess}
@@ -630,37 +618,35 @@ function App() {
           </section>
         </div>
 
-        <footer className="sticky bottom-0 z-10 shrink-0 border-t border-emerald-200/10 bg-[#02080f]/92 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-22px_54px_rgba(1,8,15,0.82)] backdrop-blur-xl">
-          <LetterBank
-            disabled={isSuccess || status === GAME_STATUS.WRONG}
-            onSelect={handleTileSelect}
-            selectedTileIds={selectedTileIds}
-            tiles={keyboardTiles}
-          />
+        <footer className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-black/62 via-black/30 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
+          <div className="relative mx-auto max-w-[360px] pb-14">
+            <LetterBank
+              disabled={isSuccess || status === GAME_STATUS.WRONG}
+              onSelect={handleTileSelect}
+              selectedTileIds={selectedTileIds}
+              tiles={keyboardTiles}
+            />
 
-          <div className="mt-4 grid grid-cols-[1fr_1.4fr] gap-3">
-            <button
-              type="button"
-              onClick={handleClear}
+            <IconActionButton
+              className="bottom-0 left-0"
               disabled={isSuccess || !hasSelectedLetters}
-              className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-800/80 px-4 font-display text-sm font-black tracking-wider text-slate-200 transition duration-300 ease-out active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              label="Temizle"
+              onClick={handleClear}
             >
-              <Eraser className="size-4" />
-              Temizle
-            </button>
+              <Trash2 className="size-5" />
+            </IconActionButton>
 
             {isSuccess ? (
               <ShimmerButton onClick={handleNextPlayer} disabled={isChangingQuestion} />
             ) : (
-              <button
-                type="button"
-                onClick={handleShuffle}
+              <IconActionButton
+                className="bottom-0 right-0"
                 disabled={status === GAME_STATUS.WRONG || !keyboardTiles.length}
-                className="inline-flex h-[52px] items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_28px_rgba(16,185,129,0.32)] transition duration-300 ease-out hover:bg-emerald-400 active:scale-95 disabled:cursor-not-allowed disabled:bg-emerald-500/35 disabled:text-emerald-950/60"
+                label="Karıştır"
+                onClick={handleShuffle}
               >
-                <Shuffle className="size-4" />
-                Karıştır
-              </button>
+                <RefreshCw className="size-5" />
+              </IconActionButton>
             )}
           </div>
         </footer>
@@ -673,13 +659,13 @@ function ModeSelectScreen({ modes, onStart, onToggleTimeAttack, timeAttack }) {
   return (
     <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
       <section
-        className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden border-x border-emerald-200/10 bg-[#03120f]/84 px-4 py-5 shadow-[0_0_90px_rgba(16,185,129,0.2)] backdrop-blur-xl sm:h-[min(860px,100dvh)] sm:rounded-[28px] sm:border`}
+        className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.34),_rgba(6,78,59,0.22)_34%,_rgba(2,6,23,0.98)_76%)] px-4 py-5 shadow-[0_0_100px_rgba(16,185,129,0.24)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}
       >
         <PitchBackdrop />
 
         <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center">
           <div className="mb-6">
-            <div className="mb-4 grid size-14 place-items-center rounded-2xl border border-emerald-300/20 bg-emerald-500/15 text-emerald-300">
+            <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200 shadow-[0_0_28px_rgba(16,185,129,0.22)] backdrop-blur-xl">
               <Goal className="size-8" />
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-300">Anagram FC</p>
@@ -692,10 +678,10 @@ function ModeSelectScreen({ modes, onStart, onToggleTimeAttack, timeAttack }) {
           <button
             type="button"
             onClick={onToggleTimeAttack}
-            className="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.055] p-4 text-left transition duration-300 ease-out active:scale-[0.99]"
+            className="mb-4 flex items-center justify-between rounded-[26px] bg-white/[0.065] p-4 text-left shadow-[0_18px_38px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 ease-out active:scale-[0.99]"
           >
             <span className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-indigo-500/15 text-indigo-200">
+              <span className="grid size-10 place-items-center rounded-xl bg-indigo-400/15 text-indigo-100 shadow-[0_0_18px_rgba(129,140,248,0.14)]">
                 <Zap className="size-5" />
               </span>
               <span>
@@ -723,17 +709,17 @@ function ModeSelectScreen({ modes, onStart, onToggleTimeAttack, timeAttack }) {
                   key={mode.id}
                   type="button"
                   onClick={() => onStart(mode)}
-                  className="group rounded-2xl border border-white/10 bg-slate-900/76 p-4 text-left shadow-lg shadow-slate-950/20 transition duration-300 ease-out hover:border-emerald-300/35 hover:bg-slate-900 hover:shadow-[0_0_28px_rgba(16,185,129,0.16)] active:scale-[0.99]"
+                  className="group rounded-[26px] bg-white/[0.055] p-4 text-left shadow-[0_18px_38px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-xl transition duration-300 ease-out hover:bg-white/[0.085] hover:shadow-[0_0_30px_rgba(16,185,129,0.18)] active:scale-[0.99]"
                 >
                   <span className="flex items-center gap-3">
-                    <span className="grid size-11 place-items-center rounded-2xl border border-emerald-200/15 bg-emerald-500/12 text-emerald-200 transition duration-300 ease-out group-hover:bg-emerald-500 group-hover:text-slate-950">
+                    <span className="grid size-11 place-items-center rounded-2xl bg-emerald-400/12 text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.12)] transition duration-300 ease-out group-hover:bg-emerald-400 group-hover:text-slate-950">
                       <Icon className="size-5" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block font-display text-base font-black tracking-wide text-white">{mode.title}</span>
                       <span className="mt-1 block text-xs font-semibold text-slate-500">{mode.description}</span>
                     </span>
-                    <span className="rounded-full bg-white/7 px-2.5 py-1 text-xs font-bold text-slate-300">
+                    <span className="rounded-full bg-black/18 px-2.5 py-1 font-display text-xs font-black tracking-wide text-slate-200">
                       {playerCount}
                     </span>
                   </span>
@@ -749,7 +735,7 @@ function ModeSelectScreen({ modes, onStart, onToggleTimeAttack, timeAttack }) {
 
 function ScoreBadge({ score }) {
   return (
-    <div className="rounded-2xl border border-indigo-300/20 bg-indigo-500/12 px-3 py-2 text-right shadow-[0_0_24px_rgba(99,102,241,0.16)]">
+    <div className="rounded-2xl bg-black/16 px-3 py-2 text-right shadow-[0_0_24px_rgba(99,102,241,0.14)] backdrop-blur-xl">
       <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase text-indigo-200">
         <Trophy className="size-3.5" />
         Skor
@@ -762,14 +748,18 @@ function ScoreBadge({ score }) {
 function Lives({ lives }) {
   return (
     <div
-      className="flex items-center gap-1.5 rounded-full border border-red-300/15 bg-red-500/10 px-3 py-1.5"
+      className="flex items-center gap-1.5 rounded-full bg-black/18 px-3 py-1.5 backdrop-blur-xl"
       aria-label={`Can: ${lives}`}
     >
       <span className="mr-1 text-[11px] font-black uppercase tracking-[0.12em] text-red-100/80">Can</span>
       {Array.from({ length: INITIAL_LIVES }).map((_, index) => (
         <Heart
           key={index}
-          className={`size-4 ${index < lives ? "fill-red-400 text-red-300" : "text-slate-700"}`}
+          className={`size-4 transition duration-300 ease-out ${
+            index < lives
+              ? "fill-red-400 text-red-300 drop-shadow-[0_0_8px_rgba(248,113,113,0.9)]"
+              : "fill-slate-700/40 text-slate-700"
+          }`}
         />
       ))}
     </div>
@@ -779,7 +769,7 @@ function Lives({ lives }) {
 function DifficultyBadge({ stage }) {
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-display text-xs font-black tracking-wide shadow-[0_0_18px_rgba(16,185,129,0.12)] ${stage.badgeClass}`}
+      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-display text-xs font-black tracking-wide backdrop-blur-xl ${stage.badgeClass}`}
       title={`Skor aralığı: ${stage.range}`}
     >
       <span className={`size-2 rounded-full ${stage.dotClass}`} />
@@ -791,7 +781,7 @@ function DifficultyBadge({ stage }) {
 function LevelUpToast({ message }) {
   return (
     <div className="pointer-events-none absolute inset-x-4 top-24 z-30 flex justify-center">
-      <div className="animate-level-up rounded-2xl border border-emerald-200/30 bg-slate-950/92 px-5 py-3 text-center shadow-[0_0_40px_rgba(16,185,129,0.35)] backdrop-blur">
+      <div className="animate-level-up rounded-2xl bg-slate-950/88 px-5 py-3 text-center shadow-[0_0_40px_rgba(16,185,129,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Seviye Atladın!</p>
         <p className="mt-1 font-display text-lg font-black tracking-wide text-white">{message.replace("Seviye Atladın! ", "")}</p>
       </div>
@@ -905,7 +895,7 @@ const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, 
             type="button"
             onClick={() => onSelect(tile)}
             disabled={disabled || isUsed}
-            className="aspect-[1.08] rotate-[var(--tile-rotation)] rounded-xl border border-emerald-200/20 bg-gradient-to-br from-[#18332f] to-[#08121f] font-display text-lg font-black tracking-wider text-emerald-100 shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition duration-300 ease-out hover:rotate-0 hover:border-emerald-300/60 hover:bg-slate-800 hover:shadow-[0_0_24px_rgba(16,185,129,0.28)] active:rotate-0 active:scale-95 disabled:cursor-not-allowed disabled:rotate-0 disabled:border-white/5 disabled:bg-none disabled:bg-slate-900/45 disabled:text-slate-600 disabled:shadow-none"
+            className="aspect-[1.08] rotate-[var(--tile-rotation)] rounded-2xl border border-emerald-300/15 border-b-4 border-b-slate-950 bg-slate-800 font-display text-lg font-black tracking-wider text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.14),0_12px_0_rgba(2,6,23,0.58)] transition duration-300 ease-out hover:rotate-0 hover:bg-slate-700 hover:text-white hover:shadow-[0_0_24px_rgba(16,185,129,0.3),0_12px_0_rgba(2,6,23,0.48)] active:translate-y-1 active:rotate-0 active:border-b-0 active:shadow-[0_0_16px_rgba(16,185,129,0.28)] disabled:cursor-not-allowed disabled:rotate-0 disabled:border-white/5 disabled:border-b-slate-950/30 disabled:bg-slate-900/42 disabled:text-slate-600 disabled:shadow-none"
             style={{ "--tile-rotation": TILE_ROTATIONS[index % TILE_ROTATIONS.length] }}
             aria-label={`${tile.letter} harfini seç`}
           >
@@ -921,40 +911,51 @@ const HintPanel = memo(function HintPanel({ disabled, hintLevel, onReveal, playe
   const buttonLabel = hintLevel === 0 ? "Ülkeyi Göster" : "Kulübü Göster";
 
   return (
-    <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.06] p-4 shadow-[0_0_28px_rgba(15,23,42,0.42)] transition duration-300 ease-out">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-200">
-          <BadgeInfo className="size-4 text-emerald-300" />
-          İpucu
-        </div>
-        <button
-          type="button"
-          onClick={onReveal}
-          disabled={disabled}
-          className="rounded-full border border-emerald-300/20 bg-emerald-500/12 px-3 py-1 font-display text-xs font-black tracking-wide text-emerald-200 transition duration-300 ease-out hover:border-emerald-200/45 hover:shadow-[0_0_18px_rgba(16,185,129,0.24)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {hintLevel >= 2 ? "Tamam" : buttonLabel}
-        </button>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
+    <div className="mt-4 flex items-center gap-2 transition duration-300 ease-out">
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 text-sm">
         <HintMetric isVisible={hintLevel >= 1} label="Ülke" value={player.nationality} />
         <HintMetric isVisible={hintLevel >= 2} label="Kulüp" value={player.club} />
       </div>
+
+      <button
+        type="button"
+        onClick={onReveal}
+        disabled={disabled}
+        className="grid size-12 shrink-0 place-items-center rounded-full bg-white/[0.07] text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out hover:bg-emerald-400/18 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+        aria-label={hintLevel >= 2 ? "İpucu tamamlandı" : buttonLabel}
+        title={hintLevel >= 2 ? "İpucu tamamlandı" : buttonLabel}
+      >
+        <BadgeInfo className="size-5" />
+      </button>
     </div>
   );
 });
 
 const HintMetric = memo(function HintMetric({ isVisible, label, value }) {
   return (
-    <div className="min-w-0 rounded-2xl bg-slate-950/55 px-3 py-2 transition duration-300 ease-out">
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className={`mt-1 truncate font-display text-sm font-black tracking-wide transition duration-300 ease-out ${isVisible ? "text-white" : "text-slate-600"}`}>
+    <div className="min-w-0 rounded-full bg-white/[0.055] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 ease-out">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100/50">{label}</p>
+      <p className={`mt-0.5 truncate font-display text-sm font-black tracking-wide transition duration-300 ease-out ${isVisible ? "text-white drop-shadow-[0_0_8px_rgba(52,211,153,0.25)]" : "text-slate-500"}`}>
         {isVisible ? value : "Kilitli"}
       </p>
     </div>
   );
 });
+
+function IconActionButton({ children, className = "", disabled, label, onClick }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      disabled={disabled}
+      className={`absolute grid size-12 place-items-center rounded-full bg-white/[0.07] text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out hover:bg-white/[0.12] hover:text-white active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
 
 function ShimmerButton({ onClick, disabled }) {
   return (
@@ -962,7 +963,7 @@ function ShimmerButton({ onClick, disabled }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="relative inline-flex h-[52px] overflow-hidden rounded-2xl bg-emerald-500 px-4 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.38)] transition duration-300 ease-out hover:bg-emerald-400 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+      className="absolute bottom-0 left-1/2 inline-flex h-12 -translate-x-1/2 overflow-hidden rounded-full bg-emerald-400 px-4 font-display text-xs font-black tracking-wider text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.42)] transition duration-300 ease-out hover:bg-emerald-300 active:scale-95 disabled:cursor-wait disabled:opacity-70"
     >
       <span className="absolute inset-y-0 left-0 w-1/2 animate-shimmer bg-gradient-to-r from-transparent via-white/45 to-transparent" />
       <span className="relative z-10 flex w-full items-center justify-center gap-2">
@@ -978,7 +979,7 @@ function GameOver({ lives, modeTitle, onMenu, onRestart, score, timeAttack, tota
   return (
     <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-4 font-body text-slate-100">
       <section
-        className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] border border-emerald-200/10 bg-[#03120f]/88 p-6 text-center shadow-[0_0_90px_rgba(16,185,129,0.2)]`}
+        className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.34),_rgba(6,78,59,0.22)_42%,_rgba(2,6,23,0.98)_82%)] p-6 text-center shadow-[0_0_90px_rgba(16,185,129,0.22)]`}
       >
         <PitchBackdrop />
         <div className="relative z-10">
@@ -991,7 +992,7 @@ function GameOver({ lives, modeTitle, onMenu, onRestart, score, timeAttack, tota
             {modeTitle} modunda {total} futbolcudan {score} tanesini doğru bildin.
           </p>
 
-          <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.055] p-4">
+          <div className="mt-6 rounded-[28px] bg-white/[0.06] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
             <div className="flex items-center justify-center gap-3">
               <Flame className="size-6 text-amber-300" />
               <span className="font-display text-5xl font-black tracking-wider text-white">{score}</span>
@@ -1007,7 +1008,7 @@ function GameOver({ lives, modeTitle, onMenu, onRestart, score, timeAttack, tota
             <button
               type="button"
               onClick={onMenu}
-              className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-800/80 px-4 font-display text-sm font-black tracking-wider text-slate-100 transition duration-300 ease-out active:scale-95"
+              className="inline-flex h-14 items-center justify-center rounded-2xl bg-white/[0.07] px-4 font-display text-sm font-black tracking-wider text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 ease-out active:scale-95"
             >
               Mod Seç
             </button>
@@ -1029,11 +1030,11 @@ function GameOver({ lives, modeTitle, onMenu, onRestart, score, timeAttack, tota
 function PitchBackdrop() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(16,185,129,0.18),transparent_38%),radial-gradient(circle_at_50%_92%,rgba(79,70,229,0.14),transparent_32%)]" />
-      <div className="absolute inset-x-6 top-28 h-48 rounded-[38px] border border-emerald-300/10 bg-emerald-500/[0.035] shadow-[inset_0_0_42px_rgba(16,185,129,0.08)]" />
-      <div className="absolute left-1/2 top-28 h-48 w-px -translate-x-1/2 bg-emerald-200/10" />
-      <div className="absolute left-1/2 top-44 size-20 -translate-x-1/2 rounded-full border border-emerald-200/10" />
-      <div className="absolute -right-14 bottom-40 size-52 rounded-full border border-violet-300/10 bg-violet-500/[0.045]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,rgba(16,185,129,0.3),rgba(6,95,70,0.16)_36%,transparent_70%)]" />
+      <div className="absolute inset-x-8 top-32 h-48 rounded-[40px] bg-emerald-400/[0.045] shadow-[inset_0_0_64px_rgba(52,211,153,0.12)]" />
+      <div className="absolute left-1/2 top-32 h-48 w-px -translate-x-1/2 bg-emerald-100/10" />
+      <div className="absolute left-1/2 top-44 size-20 -translate-x-1/2 rounded-full bg-emerald-100/[0.035] shadow-[inset_0_0_0_1px_rgba(209,250,229,0.09)]" />
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/44 via-black/12 to-transparent" />
     </div>
   );
 }

@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Kanit", "Rajdhani", "ui-sans-serif", "system-ui", "sans-serif"],
-        body: ["Rajdhani", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Oxanium", "Rajdhani", "system-ui"],
+        body: ["Rajdhani", "Oxanium", "system-ui"],
       },
       animation: {
         "level-up": "level-up 1.5s ease-out both",
