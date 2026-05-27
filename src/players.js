@@ -205,12 +205,77 @@ function normalizeName(name) {
   return name.trim().replace(/\s+/g, " ").toUpperCase();
 }
 
+const EASY_PLAYER_NAMES = new Set([
+  "HAALAND",
+  "MBAPPE",
+  "SALAH",
+  "KANE",
+  "MESSI",
+  "RONALDO",
+  "NEYMAR",
+  "PELE",
+  "XAVI",
+  "KAKA",
+  "HENRY",
+  "MUSIALA",
+  "VINICIUS",
+  "ARDA GULER",
+  "HAKAN CALHANOGLU",
+  "KENAN YILDIZ",
+  "ARDA TURAN",
+  "BURAK YILMAZ",
+  "CENK TOSUN",
+  "OKAN BURUK",
+  "RUSTU RECBER",
+  "FATIH TERIM",
+]);
+
+const HARD_PLAYER_NAMES = new Set([
+  "KVARATSKHELIA",
+  "TSYGANKOV",
+  "UPAMECANO",
+  "LEWANDOWSKI",
+  "DONNARUMMA",
+  "BELLINGHAM",
+  "SHEVCHENKO",
+  "CANNAVARO",
+  "LEFTER KUCUKANDONYADIS",
+  "ABDULKERIM BARDAKCI",
+  "BARIS ALPER YILMAZ",
+  "IRFAN CAN KAHVECI",
+  "LEFTER KUCUKANDONYADIS",
+  "GOKDENIZ KARADENIZ",
+  "BATUHAN KARADENIZ",
+  "TUGAY KERIMOGLU",
+  "KVARATSKHELIA",
+]);
+
+function getPlayerDifficulty(name) {
+  const cleanLength = name.replace(/\s/g, "").length;
+  const wordCount = name.split(" ").length;
+
+  if (HARD_PLAYER_NAMES.has(name)) {
+    return "hard";
+  }
+
+  if (EASY_PLAYER_NAMES.has(name) || (cleanLength <= 6 && wordCount === 1)) {
+    return "easy";
+  }
+
+  if (cleanLength >= 11 || wordCount >= 3) {
+    return "hard";
+  }
+
+  return "medium";
+}
+
 export const PLAYER_DATA = RAW_PLAYERS.map((player) => {
   const name = normalizeName(player.name);
 
   return {
     ...player,
     name,
+    difficulty: getPlayerDifficulty(name),
     hasSpace: name.includes(" "),
   };
 });
