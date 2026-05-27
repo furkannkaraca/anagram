@@ -4,21 +4,41 @@ import {
   BadgeInfo,
   ChevronRight,
   Clock3,
+  Copy,
   Flame,
   Goal,
   Heart,
   History,
   House,
+  Lightbulb,
+  Play,
   RefreshCw,
   RefreshCcw,
+  SkipForward,
   Sparkles,
   Star,
   Trash2,
   Trophy,
   Users,
+  UserPlus,
+  Wifi,
+  XCircle,
   Zap,
 } from "lucide-react";
 import { PLAYER_DATA } from "./players";
+import {
+  INITIAL_PASS_RIGHTS,
+  ONLINE_MATCH_SECONDS,
+  ONLINE_QUESTION_COUNT,
+  QUESTION_WRONG_ATTEMPTS,
+  createOnlineRoom,
+  determineWinner,
+  getOnlineRoom,
+  joinOnlineRoom,
+  subscribeToRoom,
+  updateOnlineRoom,
+} from "./multiplayer";
+import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 const GAME_STATUS = {
   PLAYING: "playing",
@@ -76,6 +96,9 @@ const DIFFICULTY_STAGES = [
 ];
 
 const INITIAL_LIVES = 3;
+const INITIAL_HINT_RIGHTS = 3;
+const MAX_HINT_RIGHTS = 5;
+const HINT_REWARD_STEP = 3;
 const QUESTION_SECONDS = 30;
 const WRONG_FEEDBACK_MS = 520;
 const QUESTION_TRANSITION_MS = 240;
@@ -224,6 +247,7 @@ function fireSuccessConfetti() {
 }
 
 function App() {
+  const [onlineSession, setOnlineSession] = useState(null);
   const [selectedMode, setSelectedMode] = useState(null);
   const [timeAttack, setTimeAttack] = useState(false);
   const [players, setPlayers] = useState([]);
@@ -237,6 +261,8 @@ function App() {
   const [shuffledTiles, setShuffledTiles] = useState([]);
   const [status, setStatus] = useState(GAME_STATUS.PLAYING);
   const [hintLevel, setHintLevel] = useState(0);
+  const [hintRights, setHintRights] = useState(INITIAL_HINT_RIGHTS);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
   const [isChangingQuestion, setIsChangingQuestion] = useState(false);
   const [levelUpMessage, setLevelUpMessage] = useState("");
 
@@ -289,6 +315,8 @@ function App() {
       setSelectedTiles([]);
       setShuffledTiles([]);
       setHintLevel(0);
+      setHintRights(INITIAL_HINT_RIGHTS);
+      setWrongAttempts(0);
       setLevelUpMessage("");
       setStatus(firstPlayer ? GAME_STATUS.PLAYING : GAME_STATUS.COMPLETE);
       setIsChangingQuestion(false);
@@ -330,12 +358,27 @@ function App() {
       }
 
       setStatus(GAME_STATUS.WRONG);
+      setWrongAttempts((currentAttempts) => {
+        const nextAttempts = Math.min(QUESTION_WRONG_ATTEMPTS, currentAttempts + 1);
+
+        if (nextAttempts >= QUESTION_WRONG_ATTEMPTS) {
+          window.setTimeout(() => {
+            setStatus(GAME_STATUS.COMPLETE);
+          }, WRONG_FEEDBACK_MS);
+        }
+
+        return nextAttempts;
+      });
       setLives((currentLives) => {
         const nextLives = Math.max(0, currentLives - 1);
 
         window.setTimeout(() => {
           if (nextLives <= 0) {
             setStatus(GAME_STATUS.COMPLETE);
+            return;
+          }
+
+          if (wrongAttempts + 1 >= QUESTION_WRONG_ATTEMPTS) {
             return;
           }
 
@@ -351,7 +394,7 @@ function App() {
         return nextLives;
       });
     },
-    [goToNextPlayer, status, targetWord],
+    [goToNextPlayer, status, targetWord, wrongAttempts],
   );
 
   const handleTileSelect = useCallback(
@@ -421,6 +464,15 @@ function App() {
     setShuffledTiles(shuffleWord(targetWord, difficultyStage.id));
   }, [difficultyStage.id, isSuccess, status, targetWord]);
 
+  const handleRevealHint = useCallback(() => {
+    if (hintLevel >= 2 || hintRights <= 0 || isSuccess) {
+      return;
+    }
+
+    setHintLevel((currentLevel) => Math.min(2, currentLevel + 1));
+    setHintRights((currentRights) => Math.max(0, currentRights - 1));
+  }, [hintLevel, hintRights, isSuccess]);
+
   const handleNextPlayer = useCallback(() => {
     if (!isSuccess || isChangingQuestion) {
       return;
@@ -436,11 +488,14 @@ function App() {
   }, [selectedMode, startMode]);
 
   const handleMenu = useCallback(() => {
+    setOnlineSession(null);
     setSelectedMode(null);
     setPlayers([]);
     setCurrentPlayer(null);
     setUsedPlayerIds(new Set());
     setPlayerIndex(0);
+    setHintRights(INITIAL_HINT_RIGHTS);
+    setWrongAttempts(0);
     setLevelUpMessage("");
     setStatus(GAME_STATUS.PLAYING);
     setIsChangingQuestion(false);
@@ -459,6 +514,7 @@ function App() {
     setSelectedTiles(createEmptyGuess(currentPlayer.name));
     setShuffledTiles(shuffleWord(currentPlayer.name, difficultyStage.id));
     setHintLevel(0);
+    setWrongAttempts(0);
     setTimeLeft(QUESTION_SECONDS);
     setStatus(GAME_STATUS.PLAYING);
   }, [currentPlayer, selectedMode]);
@@ -480,6 +536,10 @@ function App() {
 
       setStatus(GAME_STATUS.SUCCESS);
       setScore(nextScore);
+      if (nextScore % HINT_REWARD_STEP === 0) {
+        setHintRights((currentRights) => Math.min(MAX_HINT_RIGHTS, currentRights + 1));
+        setLevelUpMessage("+1 İpucu Kazanıldı!");
+      }
       if (currentStage.id !== nextStage.id) {
         setLevelUpMessage(`Seviye Atladın! ${nextStage.label}`);
       }
@@ -552,10 +612,21 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [levelUpMessage]);
 
+  if (onlineSession) {
+    return (
+      <OnlineMatch
+        onExit={handleMenu}
+        roomId={onlineSession.roomId}
+        seat={onlineSession.seat}
+      />
+    );
+  }
+
   if (!selectedMode) {
     return (
       <ModeSelectScreen
         modes={GAME_MODES}
+        onOnlineSession={setOnlineSession}
         timeAttack={timeAttack}
         onToggleTimeAttack={() => setTimeAttack((currentValue) => !currentValue)}
         onStart={startMode}
@@ -611,12 +682,18 @@ function App() {
             </div>
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-full bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
-            <Lives lives={lives} />
-            <DifficultyBadge stage={difficultyStage} />
-            <span className="min-w-0 truncate rounded-full bg-white/5 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-slate-200">
-              {selectedMode.title}
-            </span>
+          <div className="mt-3 grid gap-2 rounded-[24px] bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-2">
+              <Lives lives={lives} />
+              <HintRightsBadge hintRights={hintRights} />
+              <WrongAttemptsBadge wrongAttempts={wrongAttempts} />
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <DifficultyBadge stage={difficultyStage} />
+              <span className="min-w-0 truncate rounded-full bg-white/5 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-slate-200">
+                {selectedMode.title}
+              </span>
+            </div>
           </div>
 
           {timeAttack ? <TimerBar timeLeft={timeLeft} totalTime={QUESTION_SECONDS} /> : null}
@@ -633,9 +710,10 @@ function App() {
             </div>
 
             <HintPanel
-              disabled={hintLevel >= 2 || isSuccess}
+              disabled={hintLevel >= 2 || hintRights <= 0 || isSuccess}
               hintLevel={hintLevel}
-              onReveal={() => setHintLevel((currentLevel) => Math.min(2, currentLevel + 1))}
+              hintRights={hintRights}
+              onReveal={handleRevealHint}
               player={currentPlayer}
             />
           </section>
@@ -678,7 +756,744 @@ function App() {
   );
 }
 
-function ModeSelectScreen({ modes, onStart, onToggleTimeAttack, timeAttack }) {
+function OnlineMatch({ onExit, roomId, seat }) {
+  const [room, setRoom] = useState(null);
+  const [selectedTiles, setSelectedTiles] = useState([]);
+  const [shuffledTiles, setShuffledTiles] = useState([]);
+  const [status, setStatus] = useState(GAME_STATUS.PLAYING);
+  const [hintLevel, setHintLevel] = useState(0);
+  const [hintRights, setHintRights] = useState(INITIAL_HINT_RIGHTS);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [passRights, setPassRights] = useState(INITIAL_PASS_RIGHTS);
+  const [toastMessage, setToastMessage] = useState("");
+  const [onlineError, setOnlineError] = useState("");
+
+  const opponentSeat = seat === "p1" ? "p2" : "p1";
+  const me = room?.players?.[seat];
+  const opponent = room?.players?.[opponentSeat];
+  const questions = room?.players_data ?? [];
+  const currentPlayer = questions[me?.currentQuestionIndex ?? 0];
+  const targetWord = currentPlayer?.name ?? "";
+  const isWaiting = room?.game_status === "waiting";
+  const isPlaying = room?.game_status === "playing";
+  const isFinished = room?.game_status === "finished";
+  const isEliminated = Boolean(me?.isEliminated);
+  const difficultyStage = useMemo(() => getDifficultyStage(me?.score ?? 0), [me?.score]);
+
+  const selectedTileIds = useMemo(
+    () => new Set(selectedTiles.filter((tile) => tile && !tile.isSpace).map((tile) => tile.id)),
+    [selectedTiles],
+  );
+  const guessedWord = useMemo(() => selectedTiles.map((tile) => tile?.letter ?? "").join(""), [selectedTiles]);
+  const hasSelectedLetters = useMemo(() => selectedTiles.some((tile) => tile && !tile.isSpace), [selectedTiles]);
+  const usesStagedKeyboard = difficultyStage.id === "easy" && targetWord.includes(" ");
+  const activeWordIndex = useMemo(() => getActiveWordIndex(targetWord, selectedTiles), [selectedTiles, targetWord]);
+  const keyboardTiles = useMemo(
+    () => (usesStagedKeyboard ? shuffledTiles.filter((tile) => tile.wordIndex === activeWordIndex) : shuffledTiles),
+    [activeWordIndex, shuffledTiles, usesStagedKeyboard],
+  );
+
+  const updateMyPlayer = useCallback(
+    async (playerPatch, roomPatch = {}) => {
+      if (!room || !me) {
+        return null;
+      }
+
+      const nextPlayers = {
+        ...room.players,
+        [seat]: {
+          ...room.players[seat],
+          ...playerPatch,
+        },
+      };
+
+      const nextRoom = {
+        ...room,
+        ...roomPatch,
+        players: nextPlayers,
+      };
+
+      setRoom(nextRoom);
+      return updateOnlineRoom(room.id, {
+        ...roomPatch,
+        players: nextPlayers,
+      });
+    },
+    [me, room, seat],
+  );
+
+  const finalizeIfNeeded = useCallback(
+    async (latestRoom) => {
+      const p1 = latestRoom?.players?.p1;
+      const p2 = latestRoom?.players?.p2;
+      if (!p1 || !p2 || latestRoom.game_status !== "playing") {
+        return;
+      }
+
+      const p1Done = p1.isFinished || p1.isEliminated || p1.remainingTime <= 0;
+      const p2Done = p2.isFinished || p2.isEliminated || p2.remainingTime <= 0;
+      if (!p1Done || !p2Done) {
+        return;
+      }
+
+      await updateOnlineRoom(latestRoom.id, {
+        game_status: "finished",
+        winner: determineWinner(latestRoom.players),
+        finished_at: new Date().toISOString(),
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let channel;
+    let isMounted = true;
+
+    getOnlineRoom(roomId)
+      .then((loadedRoom) => {
+        if (isMounted) {
+          setRoom(loadedRoom);
+        }
+      })
+      .catch((error) => setOnlineError(error.message || "Oda okunamadı."));
+
+    if (isSupabaseConfigured) {
+      channel = subscribeToRoom(roomId, (nextRoom) => {
+        setRoom(nextRoom);
+        finalizeIfNeeded(nextRoom);
+      });
+    }
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [finalizeIfNeeded, roomId]);
+
+  useEffect(() => {
+    if (!room || room.game_status !== "waiting" || !room.players?.p1?.isReady || !room.players?.p2?.isReady) {
+      return;
+    }
+
+    updateOnlineRoom(room.id, {
+      game_status: "playing",
+      started_at: new Date().toISOString(),
+    }).catch((error) => setOnlineError(error.message || "Maç başlatılamadı."));
+  }, [room]);
+
+  useEffect(() => {
+    if (!targetWord) {
+      return;
+    }
+
+    setSelectedTiles(createEmptyGuess(targetWord));
+    setShuffledTiles(shuffleWord(targetWord, difficultyStage.id));
+    setHintLevel(0);
+    setWrongAttempts(0);
+    setStatus(GAME_STATUS.PLAYING);
+  }, [difficultyStage.id, me?.currentQuestionIndex, targetWord]);
+
+  useEffect(() => {
+    if (!isPlaying || isEliminated || me?.isFinished) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      const startedAtMs = room?.started_at ? new Date(room.started_at).getTime() : Date.now();
+      const elapsedSeconds = Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
+      const nextTime = Math.max(0, ONLINE_MATCH_SECONDS - elapsedSeconds);
+      updateMyPlayer({
+        remainingTime: nextTime,
+        isFinished: nextTime <= 0 || me?.isFinished,
+      }).then((updatedRoom) => {
+        if (updatedRoom) {
+          finalizeIfNeeded(updatedRoom);
+        }
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [finalizeIfNeeded, isEliminated, isPlaying, me?.isFinished, room?.started_at, updateMyPlayer]);
+
+  useEffect(() => {
+    if (
+      !targetWord ||
+      !isPlaying ||
+      isEliminated ||
+      me?.isFinished ||
+      status !== GAME_STATUS.PLAYING ||
+      selectedTiles.length !== targetWord.length ||
+      selectedTiles.some((tile) => tile === null)
+    ) {
+      return;
+    }
+
+    if (guessedWord === targetWord) {
+      const nextScore = (me?.score ?? 0) + 1;
+      const nextQuestionIndex = (me?.currentQuestionIndex ?? 0) + 1;
+      const didFinish = nextQuestionIndex >= ONLINE_QUESTION_COUNT;
+      const earnedHint = nextScore % HINT_REWARD_STEP === 0;
+
+      setStatus(GAME_STATUS.SUCCESS);
+      if (earnedHint) {
+        setHintRights((currentRights) => Math.min(MAX_HINT_RIGHTS, currentRights + 1));
+        setToastMessage("+1 İpucu Kazanıldı!");
+      }
+      fireSuccessConfetti();
+
+      window.setTimeout(() => {
+        updateMyPlayer({
+          score: nextScore,
+          currentQuestionIndex: nextQuestionIndex,
+          remainingWrongAttempts: QUESTION_WRONG_ATTEMPTS,
+          isFinished: didFinish,
+        }).then((updatedRoom) => {
+          if (updatedRoom) {
+            finalizeIfNeeded(updatedRoom);
+          }
+        });
+      }, QUESTION_TRANSITION_MS);
+      return;
+    }
+
+    const nextAttempts = Math.min(QUESTION_WRONG_ATTEMPTS, wrongAttempts + 1);
+    const remainingWrongAttempts = Math.max(0, QUESTION_WRONG_ATTEMPTS - nextAttempts);
+    setWrongAttempts(nextAttempts);
+    setStatus(GAME_STATUS.WRONG);
+
+    updateMyPlayer({
+      remainingWrongAttempts,
+      isEliminated: nextAttempts >= QUESTION_WRONG_ATTEMPTS,
+      isFinished: nextAttempts >= QUESTION_WRONG_ATTEMPTS,
+    }).then((updatedRoom) => {
+      if (updatedRoom) {
+        finalizeIfNeeded(updatedRoom);
+      }
+    });
+
+    window.setTimeout(() => {
+      if (nextAttempts < QUESTION_WRONG_ATTEMPTS) {
+        setSelectedTiles(createEmptyGuess(targetWord));
+        setStatus(GAME_STATUS.PLAYING);
+      }
+    }, WRONG_FEEDBACK_MS);
+  }, [
+    finalizeIfNeeded,
+    guessedWord,
+    isEliminated,
+    isPlaying,
+    me?.currentQuestionIndex,
+    me?.isFinished,
+    me?.score,
+    selectedTiles,
+    status,
+    targetWord,
+    updateMyPlayer,
+    wrongAttempts,
+  ]);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setToastMessage(""), 1500);
+    return () => window.clearTimeout(timer);
+  }, [toastMessage]);
+
+  const handleReady = async () => {
+    await updateMyPlayer({ isReady: true });
+  };
+
+  const handleTileSelect = useCallback(
+    (tile) => {
+      if (!isPlaying || isEliminated || me?.isFinished || status === GAME_STATUS.WRONG || status === GAME_STATUS.SUCCESS) {
+        return;
+      }
+
+      setSelectedTiles((currentTiles) => {
+        if (currentTiles.some((selectedTile) => selectedTile?.id === tile.id)) {
+          return currentTiles;
+        }
+
+        const nextOpenIndex = currentTiles.findIndex((selectedTile) => selectedTile === null);
+        if (nextOpenIndex === -1) {
+          return currentTiles;
+        }
+
+        return currentTiles.map((selectedTile, index) => (index === nextOpenIndex ? tile : selectedTile));
+      });
+    },
+    [isEliminated, isPlaying, me?.isFinished, status],
+  );
+
+  const handleSlotClear = useCallback(
+    (slotIndex) => {
+      if (!isPlaying || isEliminated || status !== GAME_STATUS.PLAYING || !selectedTiles[slotIndex]?.letter.trim()) {
+        return;
+      }
+
+      setSelectedTiles((currentTiles) =>
+        currentTiles.map((selectedTile, index) => (index === slotIndex ? null : selectedTile)),
+      );
+    },
+    [isEliminated, isPlaying, selectedTiles, status],
+  );
+
+  const handleBackspace = useCallback(() => {
+    if (!isPlaying || isEliminated || status !== GAME_STATUS.PLAYING) {
+      return;
+    }
+
+    setSelectedTiles((currentTiles) => {
+      const lastSelectedIndex = currentTiles.findLastIndex((tile) => tile && !tile.isSpace);
+      if (lastSelectedIndex === -1) {
+        return currentTiles;
+      }
+
+      return currentTiles.map((selectedTile, index) => (index === lastSelectedIndex ? null : selectedTile));
+    });
+  }, [isEliminated, isPlaying, status]);
+
+  useEffect(() => {
+    if (!isPlaying || isEliminated || status !== GAME_STATUS.PLAYING) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.repeat) {
+        return;
+      }
+
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        handleBackspace();
+        return;
+      }
+
+      if (event.key.length !== 1) {
+        return;
+      }
+
+      const keyCandidates = new Set([event.key.toUpperCase(), event.key.toLocaleUpperCase("tr-TR")]);
+      const nextTile = keyboardTiles.find((tile) => keyCandidates.has(tile.letter) && !selectedTileIds.has(tile.id));
+
+      if (nextTile) {
+        event.preventDefault();
+        handleTileSelect(nextTile);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleBackspace, handleTileSelect, isEliminated, isPlaying, keyboardTiles, selectedTileIds, status]);
+
+  const handleClear = () => {
+    setSelectedTiles(createEmptyGuess(targetWord));
+    setStatus(GAME_STATUS.PLAYING);
+  };
+
+  const handleShuffle = () => {
+    setShuffledTiles(shuffleWord(targetWord, difficultyStage.id));
+  };
+
+  const handleRevealHint = () => {
+    if (hintRights <= 0 || hintLevel >= 2) {
+      return;
+    }
+
+    setHintLevel((currentLevel) => Math.min(2, currentLevel + 1));
+    setHintRights((currentRights) => Math.max(0, currentRights - 1));
+  };
+
+  const handlePass = () => {
+    if (!isPlaying || passRights <= 0 || isEliminated || me?.isFinished) {
+      return;
+    }
+
+    const nextQuestionIndex = (me?.currentQuestionIndex ?? 0) + 1;
+    const didFinish = nextQuestionIndex >= ONLINE_QUESTION_COUNT;
+    setPassRights((currentRights) => Math.max(0, currentRights - 1));
+    setWrongAttempts(0);
+    updateMyPlayer({
+      currentQuestionIndex: nextQuestionIndex,
+      remainingWrongAttempts: QUESTION_WRONG_ATTEMPTS,
+      isFinished: didFinish,
+    }).then((updatedRoom) => {
+      if (updatedRoom) {
+        finalizeIfNeeded(updatedRoom);
+      }
+    });
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard?.writeText(roomId);
+    setToastMessage("Oda kodu kopyalandı");
+  };
+
+  if (!room || !me) {
+    return (
+      <LoadingShell onExit={onExit} text={onlineError || "Oda yükleniyor..."} />
+    );
+  }
+
+  if (isFinished) {
+    return <OnlineResult room={room} seat={seat} onExit={onExit} />;
+  }
+
+  if (isWaiting) {
+    return (
+      <OnlineWaitingRoom
+        error={onlineError}
+        me={me}
+        onCopyCode={handleCopyCode}
+        onExit={onExit}
+        onReady={handleReady}
+        opponent={opponent}
+        roomId={roomId}
+        toastMessage={toastMessage}
+      />
+    );
+  }
+
+  return (
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
+      <section className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.32),_rgba(6,78,59,0.24)_34%,_rgba(2,6,23,0.98)_76%)] shadow-[0_0_110px_rgba(16,185,129,0.28)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}>
+        <PitchBackdrop />
+        {toastMessage ? <LevelUpToast message={toastMessage} /> : null}
+
+        <header className="relative z-10 shrink-0 px-4 pb-2 pt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-300">Online Rekabet</p>
+              <h1 className="font-display text-xl font-black leading-none tracking-wide text-white">Oda {roomId}</h1>
+            </div>
+            <button
+              type="button"
+              onClick={onExit}
+              className="grid size-11 place-items-center rounded-2xl bg-black/16 text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.14)] backdrop-blur-xl transition duration-300 ease-out active:scale-95"
+              aria-label="Ana menüye dön"
+              title="Ana menüye dön"
+            >
+              <House className="size-5" />
+            </button>
+          </div>
+
+          <LiveProgressTracker me={me} opponent={opponent} />
+          <TimerBar timeLeft={me.remainingTime} totalTime={ONLINE_MATCH_SECONDS} />
+          <div className="mt-2 flex items-center justify-between gap-2 rounded-full bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+            <HintRightsBadge hintRights={hintRights} />
+            <WrongAttemptsBadge wrongAttempts={wrongAttempts} />
+            <span className="rounded-full bg-white/5 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-slate-200">
+              {Math.min(me.currentQuestionIndex + 1, ONLINE_QUESTION_COUNT)}/{ONLINE_QUESTION_COUNT}. Soru
+            </span>
+            <span className="rounded-full bg-emerald-400/12 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-emerald-100">
+              Pas x{passRights}
+            </span>
+          </div>
+        </header>
+
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 pb-3">
+          {isEliminated ? (
+            <EliminatedPanel opponent={opponent} />
+          ) : (
+            <section className="flex min-h-0 flex-1 flex-col justify-center transition duration-300 ease-out">
+              <div className="relative rounded-[34px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.48),_rgba(6,78,59,0.28)_48%,_rgba(2,6,23,0.36)_100%)] px-3 py-8 shadow-[inset_0_0_54px_rgba(16,185,129,0.2),0_22px_60px_rgba(0,0,0,0.26)]">
+                <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
+              </div>
+
+              <HintPanel
+                disabled={hintLevel >= 2 || hintRights <= 0}
+                hintLevel={hintLevel}
+                hintRights={hintRights}
+                onReveal={handleRevealHint}
+                player={currentPlayer}
+              />
+            </section>
+          )}
+        </div>
+
+        {!isEliminated ? (
+          <footer className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-black/62 via-black/30 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
+            <div className="relative mx-auto max-w-[360px] pb-14">
+              <LetterBank
+                disabled={status === GAME_STATUS.WRONG || status === GAME_STATUS.SUCCESS || me.isFinished}
+                onSelect={handleTileSelect}
+                selectedTileIds={selectedTileIds}
+                tiles={keyboardTiles}
+              />
+
+              <IconActionButton
+                className="bottom-0 left-0"
+                disabled={!hasSelectedLetters}
+                label="Temizle"
+                onClick={handleClear}
+              >
+                <Trash2 className="size-5" />
+              </IconActionButton>
+
+              <button
+                type="button"
+                onClick={handlePass}
+                disabled={passRights <= 0 || status === GAME_STATUS.SUCCESS || me.isFinished}
+                className="absolute bottom-0 left-1/2 inline-flex h-12 -translate-x-1/2 items-center justify-center gap-1.5 rounded-full bg-white/[0.07] px-4 font-display text-xs font-black tracking-wider text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                <SkipForward className="size-4" />
+                x{passRights}
+              </button>
+
+              <IconActionButton
+                className="bottom-0 right-0"
+                disabled={status === GAME_STATUS.WRONG || !keyboardTiles.length}
+                label="Karıştır"
+                onClick={handleShuffle}
+              >
+                <RefreshCw className="size-5" />
+              </IconActionButton>
+            </div>
+          </footer>
+        ) : null}
+      </section>
+    </main>
+  );
+}
+
+function LoadingShell({ onExit, text }) {
+  return (
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-4 font-body text-slate-100">
+      <section className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.3),_rgba(2,6,23,0.98)_78%)] p-6 text-center shadow-[0_0_90px_rgba(16,185,129,0.2)]`}>
+        <PitchBackdrop />
+        <div className="relative z-10">
+          <div className="mx-auto mb-4 grid size-16 place-items-center rounded-3xl bg-emerald-400/15 text-emerald-100 shadow-[0_0_28px_rgba(16,185,129,0.22)]">
+            <Wifi className="size-8" />
+          </div>
+          <p className="font-display text-xl font-black tracking-wide text-white">{text}</p>
+          <button
+            type="button"
+            onClick={onExit}
+            className="mt-5 h-12 rounded-full bg-white/[0.07] px-5 font-display text-sm font-black tracking-wider text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl"
+          >
+            Ana Menü
+          </button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function OnlineWaitingRoom({ error, me, onCopyCode, onExit, onReady, opponent, roomId, toastMessage }) {
+  return (
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-4 font-body text-slate-100">
+      <section className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.34),_rgba(6,78,59,0.22)_42%,_rgba(2,6,23,0.98)_82%)] p-6 text-center shadow-[0_0_90px_rgba(16,185,129,0.22)]`}>
+        <PitchBackdrop />
+        {toastMessage ? <LevelUpToast message={toastMessage} /> : null}
+        <div className="relative z-10">
+          <div className="mx-auto grid size-20 place-items-center rounded-[28px] bg-emerald-400/15 text-emerald-100 shadow-[0_0_34px_rgba(16,185,129,0.28)]">
+            <Wifi className="size-10" />
+          </div>
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.28em] text-emerald-300">Online Oda</p>
+          <h2 className="mt-2 font-display text-5xl font-black tracking-wider text-white">{roomId}</h2>
+          <button
+            type="button"
+            onClick={onCopyCode}
+            className="mx-auto mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white/[0.07] px-4 font-display text-xs font-black tracking-wider text-emerald-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl"
+          >
+            <Copy className="size-4" />
+            Kodu Kopyala
+          </button>
+
+          <div className="mt-6 grid gap-3 text-left">
+            <WaitingPlayerCard label="Oyuncu 1" player={me} />
+            <WaitingPlayerCard label="Rakip" player={opponent} />
+          </div>
+
+          {error ? <p className="mt-4 text-sm font-bold text-red-300">{error}</p> : null}
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={onExit}
+              className="h-14 rounded-2xl bg-white/[0.07] font-display text-sm font-black tracking-wider text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl"
+            >
+              Çık
+            </button>
+            <button
+              type="button"
+              onClick={onReady}
+              disabled={me.isReady || !opponent}
+              className="h-14 rounded-2xl bg-emerald-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.35)] transition duration-300 ease-out active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none"
+            >
+              {me.isReady ? "Hazır" : opponent ? "Hazırım" : "Rakip Bekleniyor"}
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function WaitingPlayerCard({ label, player }) {
+  return (
+    <div className="rounded-3xl bg-white/[0.06] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100/50">{label}</p>
+      <div className="mt-1 flex items-center justify-between">
+        <p className="font-display text-lg font-black tracking-wide text-white">{player?.name || "Bekleniyor"}</p>
+        <span className={`rounded-full px-2.5 py-1 font-display text-[10px] font-black tracking-wide ${player?.isReady ? "bg-emerald-400/18 text-emerald-100" : "bg-white/7 text-slate-400"}`}>
+          {player?.isReady ? "Hazır" : "Bekliyor"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function LiveProgressTracker({ me, opponent }) {
+  return (
+    <div className="mt-3 grid gap-2 rounded-[24px] bg-black/20 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+      <ProgressRow label="Sen" player={me} />
+      <ProgressRow label="Rakip" player={opponent} />
+    </div>
+  );
+}
+
+function ProgressRow({ label, player }) {
+  const currentIndex = player?.currentQuestionIndex ?? 0;
+  const progress = Math.min(100, (currentIndex / ONLINE_QUESTION_COUNT) * 100);
+
+  return (
+    <div className="grid grid-cols-[3.8rem_1fr_auto] items-center gap-2">
+      <span className="truncate font-display text-[11px] font-black tracking-wide text-slate-300">{label}</span>
+      <div className="h-2 overflow-hidden rounded-full bg-slate-900/80">
+        <div className="h-full rounded-full bg-emerald-400 transition-all duration-300 ease-out" style={{ width: `${progress}%` }} />
+      </div>
+      <span className="font-display text-[11px] font-black tracking-wide text-white">
+        {Math.min(currentIndex + 1, ONLINE_QUESTION_COUNT)}/{ONLINE_QUESTION_COUNT} | {player?.score ?? 0} Gol
+      </span>
+    </div>
+  );
+}
+
+function EliminatedPanel({ opponent }) {
+  return (
+    <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="rounded-[30px] bg-black/24 p-6 text-center shadow-[0_0_42px_rgba(248,113,113,0.18),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-xl">
+        <XCircle className="mx-auto size-14 text-red-300 drop-shadow-[0_0_18px_rgba(248,113,113,0.45)]" />
+        <h2 className="mt-4 font-display text-2xl font-black tracking-wide text-white">Elendiniz</h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-400">
+          Rakibinizin bitirmesi bekleniyor. Rakip skor: {opponent?.score ?? 0} Gol
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function OnlineResult({ onExit, room, seat }) {
+  const me = room.players[seat];
+  const opponentSeat = seat === "p1" ? "p2" : "p1";
+  const opponent = room.players[opponentSeat];
+  const isDraw = room.winner === "draw";
+  const didWin = room.winner === seat;
+
+  useEffect(() => {
+    if (didWin) {
+      fireSuccessConfetti();
+    }
+  }, [didWin]);
+
+  return (
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-4 font-body text-slate-100">
+      <section className={`relative w-full ${MAX_APP_WIDTH} overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.34),_rgba(6,78,59,0.22)_42%,_rgba(2,6,23,0.98)_82%)] p-6 text-center shadow-[0_0_90px_rgba(16,185,129,0.22)]`}>
+        <PitchBackdrop />
+        <div className="relative z-10">
+          <div className={`mx-auto grid size-20 place-items-center rounded-[28px] ${didWin ? "bg-emerald-400 text-slate-950" : isDraw ? "bg-amber-300 text-slate-950" : "bg-red-400 text-slate-950"} shadow-xl shadow-slate-950/40`}>
+            {didWin ? <Trophy className="size-10" /> : isDraw ? <Sparkles className="size-10" /> : <Heart className="size-10" />}
+          </div>
+          <p className="mt-5 text-xs font-bold uppercase tracking-[0.28em] text-emerald-300">Maç Sonu</p>
+          <h2 className="mt-2 font-display text-3xl font-black tracking-wide text-white">
+            {isDraw ? "BERABERE" : didWin ? "ZAFER 🏆" : "BOZGUN 💔"}
+          </h2>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <ResultStatCard title="Sen" player={me} />
+            <ResultStatCard title="Rakip" player={opponent} />
+          </div>
+
+          <button
+            type="button"
+            onClick={onExit}
+            className="mt-6 h-14 w-full rounded-2xl bg-emerald-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.35)] transition duration-300 ease-out active:scale-95"
+          >
+            Ana Menü
+          </button>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function ResultStatCard({ player, title }) {
+  return (
+    <div className="rounded-[24px] bg-white/[0.06] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100/50">{title}</p>
+      <p className="mt-2 font-display text-3xl font-black tracking-wider text-white">{player?.score ?? 0}</p>
+      <div className="mt-2 grid gap-1 text-xs font-bold text-slate-400">
+        <span>Süre: {player?.remainingTime ?? 0}s</span>
+        <span>Kalan hak: {player?.remainingWrongAttempts ?? 0}</span>
+      </div>
+    </div>
+  );
+}
+
+function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack, timeAttack }) {
+  const [playerName, setPlayerName] = useState("");
+  const [roomCode, setRoomCode] = useState("");
+  const [onlineError, setOnlineError] = useState("");
+  const [isOnlineBusy, setIsOnlineBusy] = useState(false);
+
+  const handleCreateRoom = async () => {
+    if (!isSupabaseConfigured) {
+      setOnlineError("Online mod için Supabase env bilgileri gerekli.");
+      return;
+    }
+
+    setIsOnlineBusy(true);
+    setOnlineError("");
+
+    try {
+      const room = await createOnlineRoom(playerName);
+      onOnlineSession({ roomId: room.id, seat: "p1" });
+    } catch (error) {
+      setOnlineError(error.message || "Oda oluşturulamadı.");
+    } finally {
+      setIsOnlineBusy(false);
+    }
+  };
+
+  const handleJoinRoom = async () => {
+    if (!isSupabaseConfigured) {
+      setOnlineError("Online mod için Supabase env bilgileri gerekli.");
+      return;
+    }
+
+    if (roomCode.trim().length !== 4) {
+      setOnlineError("4 haneli oda kodunu gir.");
+      return;
+    }
+
+    setIsOnlineBusy(true);
+    setOnlineError("");
+
+    try {
+      const room = await joinOnlineRoom(roomCode, playerName);
+      onOnlineSession({ roomId: room.id, seat: "p2" });
+    } catch (error) {
+      setOnlineError(error.message || "Odaya katılamadın.");
+    } finally {
+      setIsOnlineBusy(false);
+    }
+  };
+
   return (
     <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
       <section
@@ -721,6 +1536,58 @@ function ModeSelectScreen({ modes, onStart, onToggleTimeAttack, timeAttack }) {
               <span className="size-5 rounded-full bg-white shadow" />
             </span>
           </button>
+
+          <div className="mb-4 rounded-[26px] bg-white/[0.06] p-4 shadow-[0_18px_38px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-xl">
+            <div className="mb-3 flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-xl bg-emerald-400/15 text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.16)]">
+                <Wifi className="size-5" />
+              </span>
+              <div>
+                <p className="font-display text-sm font-black tracking-wide text-white">Online Canlı Rekabet</p>
+                <p className="text-xs font-semibold text-slate-500">2 cihaz, aynı 10 futbolcu, 60 saniye</p>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <input
+                value={playerName}
+                onChange={(event) => setPlayerName(event.target.value)}
+                placeholder="Oyuncu adın"
+                maxLength={16}
+                className="h-11 rounded-2xl bg-black/20 px-3 font-display text-sm font-black tracking-wide text-white outline-none ring-1 ring-white/5 transition duration-300 ease-out placeholder:text-slate-600 focus:ring-emerald-300/40"
+              />
+              <div className="grid grid-cols-[1fr_auto] gap-2">
+                <input
+                  value={roomCode}
+                  onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, "").slice(0, 4))}
+                  placeholder="Oda kodu"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="h-11 rounded-2xl bg-black/20 px-3 font-display text-sm font-black tracking-wider text-white outline-none ring-1 ring-white/5 transition duration-300 ease-out placeholder:text-slate-600 focus:ring-emerald-300/40"
+                />
+                <button
+                  type="button"
+                  onClick={handleJoinRoom}
+                  disabled={isOnlineBusy}
+                  className="grid h-11 w-12 place-items-center rounded-2xl bg-indigo-400/16 text-indigo-100 shadow-[0_0_20px_rgba(129,140,248,0.14)] transition duration-300 ease-out active:scale-95 disabled:opacity-45"
+                  aria-label="Odaya katıl"
+                  title="Odaya katıl"
+                >
+                  <UserPlus className="size-5" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleCreateRoom}
+                disabled={isOnlineBusy}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_24px_rgba(16,185,129,0.32)] transition duration-300 ease-out active:scale-[0.98] disabled:opacity-50"
+              >
+                <Play className="size-4" />
+                Oda Oluştur
+              </button>
+              {onlineError ? <p className="text-xs font-bold text-red-300">{onlineError}</p> : null}
+            </div>
+          </div>
 
           <div className="grid gap-3">
             {modes.map((mode) => {
@@ -782,6 +1649,33 @@ function Lives({ lives }) {
             index < lives
               ? "fill-red-400 text-red-300 drop-shadow-[0_0_8px_rgba(248,113,113,0.9)]"
               : "fill-slate-700/40 text-slate-700"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HintRightsBadge({ hintRights }) {
+  return (
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-yellow-300/12 px-2.5 py-1.5 font-display text-xs font-black tracking-wide text-yellow-100 shadow-[0_0_18px_rgba(250,204,21,0.16)] backdrop-blur-xl">
+      <Lightbulb className="size-3.5 fill-yellow-200/70 text-yellow-100" />
+      x{hintRights}
+    </div>
+  );
+}
+
+function WrongAttemptsBadge({ wrongAttempts }) {
+  const remaining = Math.max(0, QUESTION_WRONG_ATTEMPTS - wrongAttempts);
+
+  return (
+    <div className="inline-flex items-center gap-1 rounded-full bg-red-400/10 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-red-100/85 shadow-[0_0_16px_rgba(248,113,113,0.12)] backdrop-blur-xl">
+      Hak
+      {Array.from({ length: QUESTION_WRONG_ATTEMPTS }).map((_, index) => (
+        <XCircle
+          key={index}
+          className={`size-3.5 transition duration-300 ease-out ${
+            index < remaining ? "fill-red-400/80 text-red-200 drop-shadow-[0_0_7px_rgba(248,113,113,0.65)]" : "text-slate-700"
           }`}
         />
       ))}
@@ -927,8 +1821,9 @@ const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, 
   );
 });
 
-const HintPanel = memo(function HintPanel({ disabled, hintLevel, onReveal, player }) {
+const HintPanel = memo(function HintPanel({ disabled, hintLevel, hintRights, onReveal, player }) {
   const buttonLabel = hintLevel === 0 ? "Ülkeyi Göster" : "Kulübü Göster";
+  const hintTitle = hintRights <= 0 ? "İpucu hakkın kalmadı" : buttonLabel;
 
   return (
     <div className="mt-4 flex items-center gap-2 transition duration-300 ease-out">
@@ -942,8 +1837,8 @@ const HintPanel = memo(function HintPanel({ disabled, hintLevel, onReveal, playe
         onClick={onReveal}
         disabled={disabled}
         className="grid size-12 shrink-0 place-items-center rounded-full bg-white/[0.07] text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out hover:bg-emerald-400/18 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
-        aria-label={hintLevel >= 2 ? "İpucu tamamlandı" : buttonLabel}
-        title={hintLevel >= 2 ? "İpucu tamamlandı" : buttonLabel}
+        aria-label={hintLevel >= 2 ? "İpucu tamamlandı" : hintTitle}
+        title={hintLevel >= 2 ? "İpucu tamamlandı" : hintTitle}
       >
         <BadgeInfo className="size-5" />
       </button>
