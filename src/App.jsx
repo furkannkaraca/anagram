@@ -649,9 +649,9 @@ function App() {
   }
 
   return (
-    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-[#17213a] sm:px-4">
       <section
-        className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.32),_rgba(6,78,59,0.24)_34%,_rgba(2,6,23,0.98)_76%)] shadow-[0_0_110px_rgba(16,185,129,0.28)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}
+        className={`album-shell relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden shadow-[0_24px_80px_rgba(7,18,34,0.42)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}
       >
         <PitchBackdrop />
         {levelUpMessage ? <LevelUpToast message={levelUpMessage} /> : null}
@@ -659,12 +659,12 @@ function App() {
         <header className="relative z-10 shrink-0 px-4 pb-2 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="grid size-11 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200 shadow-[0_0_26px_rgba(16,185,129,0.25)] backdrop-blur-xl">
+              <div className="grid size-11 rotate-[-3deg] place-items-center rounded-xl bg-[#f4bd2e] text-[#17345a] shadow-[0_5px_0_#c73031,0_12px_22px_rgba(10,22,40,0.26)] ring-2 ring-white/70">
                 <Goal className="size-6" />
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-300">Anagram FC</p>
-                <h1 className="font-display text-xl font-black leading-none tracking-wide text-white">Futbol Anagram</h1>
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#f4bd2e]">Sticker FC</p>
+                <h1 className="print-ink font-display text-2xl font-black leading-none tracking-wide text-[#fff2c0]">Futbol Anagram</h1>
               </div>
             </div>
 
@@ -672,7 +672,7 @@ function App() {
               <button
                 type="button"
                 onClick={handleMenu}
-                className="grid size-11 place-items-center rounded-2xl bg-black/16 text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.14)] backdrop-blur-xl transition duration-300 ease-out hover:bg-white/[0.1] hover:text-white active:scale-95"
+                className="sticker-cut grid size-11 place-items-center rounded-xl text-[#17345a] transition duration-300 ease-out hover:-rotate-2 active:translate-y-1"
                 aria-label="Ana menüye dön"
                 title="Ana menüye dön"
               >
@@ -682,7 +682,7 @@ function App() {
             </div>
           </div>
 
-          <div className="mt-3 grid gap-2 rounded-[24px] bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+          <div className="album-paper mt-3 grid rotate-[-0.7deg] gap-2 rounded-[22px] px-2 py-2 ring-2 ring-white/50">
             <div className="flex items-center justify-between gap-2">
               <Lives lives={lives} />
               <HintRightsBadge hintRights={hintRights} />
@@ -690,7 +690,7 @@ function App() {
             </div>
             <div className="flex items-center justify-between gap-2">
               <DifficultyBadge stage={difficultyStage} />
-              <span className="min-w-0 truncate rounded-full bg-white/5 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-slate-200">
+              <span className="min-w-0 truncate rounded-full bg-[#17345a] px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-[#fff2c0] shadow-[0_3px_0_#c73031]">
                 {selectedMode.title}
               </span>
             </div>
@@ -705,7 +705,7 @@ function App() {
               isChangingQuestion ? "translate-y-2 opacity-0" : "translate-y-0 opacity-100"
             }`}
           >
-            <div className="relative rounded-[34px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.48),_rgba(6,78,59,0.28)_48%,_rgba(2,6,23,0.36)_100%)] px-3 py-8 shadow-[inset_0_0_54px_rgba(16,185,129,0.2),0_22px_60px_rgba(0,0,0,0.26)]">
+            <div className="album-paper relative rotate-[0.6deg] rounded-[28px] px-3 py-8 ring-2 ring-white/45">
               <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
             </div>
 
@@ -719,7 +719,7 @@ function App() {
           </section>
         </div>
 
-        <footer className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-black/62 via-black/30 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
+        <footer className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-[#10213d] via-[#10213d]/78 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
           <div className="relative mx-auto max-w-[360px] pb-14">
             <LetterBank
               disabled={isSuccess || status === GAME_STATUS.WRONG}
@@ -1159,21 +1159,21 @@ function OnlineMatch({ onExit, roomId, seat }) {
   }
 
   return (
-    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
-      <section className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.32),_rgba(6,78,59,0.24)_34%,_rgba(2,6,23,0.98)_76%)] shadow-[0_0_110px_rgba(16,185,129,0.28)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}>
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-[#17213a] sm:px-4">
+      <section className={`album-shell relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden shadow-[0_24px_80px_rgba(7,18,34,0.42)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}>
         <PitchBackdrop />
         {toastMessage ? <LevelUpToast message={toastMessage} /> : null}
 
         <header className="relative z-10 shrink-0 px-4 pb-2 pt-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-emerald-300">Online Rekabet</p>
-              <h1 className="font-display text-xl font-black leading-none tracking-wide text-white">Oda {roomId}</h1>
+              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#f4bd2e]">Online Sticker Maçı</p>
+              <h1 className="print-ink font-display text-2xl font-black leading-none tracking-wide text-[#fff2c0]">Oda {roomId}</h1>
             </div>
             <button
               type="button"
               onClick={onExit}
-              className="grid size-11 place-items-center rounded-2xl bg-black/16 text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.14)] backdrop-blur-xl transition duration-300 ease-out active:scale-95"
+              className="sticker-cut grid size-11 place-items-center rounded-xl text-[#17345a] transition duration-300 ease-out hover:-rotate-2 active:translate-y-1"
               aria-label="Ana menüye dön"
               title="Ana menüye dön"
             >
@@ -1183,13 +1183,13 @@ function OnlineMatch({ onExit, roomId, seat }) {
 
           <LiveProgressTracker me={me} opponent={opponent} />
           <TimerBar timeLeft={me.remainingTime} totalTime={ONLINE_MATCH_SECONDS} />
-          <div className="mt-2 flex items-center justify-between gap-2 rounded-full bg-black/20 px-2 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+          <div className="album-paper mt-2 flex rotate-[0.6deg] items-center justify-between gap-2 rounded-[20px] px-2 py-2 ring-2 ring-white/45">
             <HintRightsBadge hintRights={hintRights} />
             <WrongAttemptsBadge wrongAttempts={wrongAttempts} />
-            <span className="rounded-full bg-white/5 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-slate-200">
+            <span className="rounded-full bg-[#17345a] px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-[#fff2c0] shadow-[0_3px_0_#c73031]">
               {Math.min(me.currentQuestionIndex + 1, ONLINE_QUESTION_COUNT)}/{ONLINE_QUESTION_COUNT}. Soru
             </span>
-            <span className="rounded-full bg-emerald-400/12 px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-emerald-100">
+            <span className="rounded-full bg-[#c73031] px-2.5 py-1.5 font-display text-[10px] font-black tracking-wider text-[#fff2c0] shadow-[0_3px_0_#17345a]">
               Pas x{passRights}
             </span>
           </div>
@@ -1200,7 +1200,7 @@ function OnlineMatch({ onExit, roomId, seat }) {
             <EliminatedPanel opponent={opponent} />
           ) : (
             <section className="flex min-h-0 flex-1 flex-col justify-center transition duration-300 ease-out">
-              <div className="relative rounded-[34px] bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.48),_rgba(6,78,59,0.28)_48%,_rgba(2,6,23,0.36)_100%)] px-3 py-8 shadow-[inset_0_0_54px_rgba(16,185,129,0.2),0_22px_60px_rgba(0,0,0,0.26)]">
+              <div className="album-paper relative rotate-[0.6deg] rounded-[28px] px-3 py-8 ring-2 ring-white/45">
                 <GuessBoard selectedTiles={selectedTiles} status={status} onSlotClear={handleSlotClear} />
               </div>
 
@@ -1216,7 +1216,7 @@ function OnlineMatch({ onExit, roomId, seat }) {
         </div>
 
         {!isEliminated ? (
-          <footer className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-black/62 via-black/30 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 backdrop-blur-sm">
+          <footer className="sticky bottom-0 z-10 shrink-0 bg-gradient-to-t from-[#10213d] via-[#10213d]/78 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
             <div className="relative mx-auto max-w-[360px] pb-14">
               <LetterBank
                 disabled={status === GAME_STATUS.WRONG || status === GAME_STATUS.SUCCESS || me.isFinished}
@@ -1238,7 +1238,7 @@ function OnlineMatch({ onExit, roomId, seat }) {
                 type="button"
                 onClick={handlePass}
                 disabled={passRights <= 0 || status === GAME_STATUS.SUCCESS || me.isFinished}
-                className="absolute bottom-0 left-1/2 inline-flex h-12 -translate-x-1/2 items-center justify-center gap-1.5 rounded-full bg-white/[0.07] px-4 font-display text-xs font-black tracking-wider text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
+                className="sticker-cut absolute bottom-0 left-1/2 inline-flex h-12 -translate-x-1/2 items-center justify-center gap-1.5 rounded-full px-4 font-display text-xs font-black tracking-wider transition duration-300 ease-out active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <SkipForward className="size-4" />
                 x{passRights}
@@ -1495,20 +1495,20 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
   };
 
   return (
-    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-slate-100 sm:px-4">
+    <main className="flex h-dvh w-full items-center justify-center overflow-hidden px-0 font-body text-[#17213a] sm:px-4">
       <section
-        className={`relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-hidden bg-[radial-gradient(circle_at_center,_rgba(16,185,129,0.34),_rgba(6,78,59,0.22)_34%,_rgba(2,6,23,0.98)_76%)] px-4 py-5 shadow-[0_0_100px_rgba(16,185,129,0.24)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}
+        className={`album-shell relative flex h-dvh w-full ${MAX_APP_WIDTH} flex-col overflow-y-auto px-4 py-4 shadow-[0_24px_80px_rgba(7,18,34,0.42)] sm:h-[min(860px,100dvh)] sm:rounded-[30px]`}
       >
         <PitchBackdrop />
 
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col justify-center">
-          <div className="mb-6">
-            <div className="mb-4 grid size-14 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200 shadow-[0_0_28px_rgba(16,185,129,0.22)] backdrop-blur-xl">
+        <div className="relative z-10 flex min-h-full flex-col justify-start py-1">
+          <div className="mb-4">
+            <div className="mb-3 grid size-12 rotate-[-4deg] place-items-center rounded-xl bg-[#f4bd2e] text-[#17345a] shadow-[0_6px_0_#c73031,0_15px_26px_rgba(10,22,40,0.28)] ring-2 ring-white/70">
               <Goal className="size-8" />
             </div>
-            <p className="text-xs font-bold uppercase tracking-[0.28em] text-emerald-300">Anagram FC</p>
-            <h1 className="mt-2 font-display text-3xl font-black leading-tight tracking-wide text-white">Modunu seç</h1>
-            <p className="mt-2 text-sm font-medium leading-6 text-slate-400">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-[#f4bd2e]">Sticker FC</p>
+            <h1 className="print-ink mt-2 font-display text-4xl font-black leading-tight tracking-wide text-[#fff2c0]">Albümünü Seç</h1>
+            <p className="mt-2 max-w-xs rounded-xl bg-[#fff2c0]/88 px-3 py-1.5 text-sm font-bold leading-5 text-[#17345a] shadow-[0_5px_0_rgba(23,52,90,0.22)]">
               Havuzunu belirle, istersen 30 saniyelik zaman baskısıyla oyna.
             </p>
           </div>
@@ -1516,20 +1516,20 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
           <button
             type="button"
             onClick={onToggleTimeAttack}
-            className="mb-4 flex items-center justify-between rounded-[26px] bg-white/[0.065] p-4 text-left shadow-[0_18px_38px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 ease-out active:scale-[0.99]"
+            className="album-paper mb-3 flex rotate-[-0.8deg] items-center justify-between rounded-[22px] p-3 text-left ring-2 ring-white/50 transition duration-300 ease-out active:scale-[0.99]"
           >
             <span className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-indigo-400/15 text-indigo-100 shadow-[0_0_18px_rgba(129,140,248,0.14)]">
+              <span className="grid size-10 place-items-center rounded-xl bg-[#17345a] text-[#fff2c0] shadow-[0_4px_0_#c73031]">
                 <Zap className="size-5" />
               </span>
               <span>
-                <span className="block font-display text-sm font-black tracking-wide text-white">Zaman Yarışı</span>
-                <span className="block text-xs font-semibold text-slate-500">Her soru için 30 saniye</span>
+                <span className="block font-display text-base font-black tracking-wide text-[#17345a]">Zaman Yarışı</span>
+                <span className="block text-xs font-bold text-[#6d5b38]">Her soru için 30 saniye</span>
               </span>
             </span>
             <span
               className={`flex h-7 w-12 items-center rounded-full p-1 transition duration-300 ease-out ${
-                timeAttack ? "justify-end bg-emerald-500" : "justify-start bg-slate-700"
+                timeAttack ? "justify-end bg-[#c73031]" : "justify-start bg-[#17345a]"
               }`}
               aria-hidden="true"
             >
@@ -1537,14 +1537,14 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
             </span>
           </button>
 
-          <div className="mb-4 rounded-[26px] bg-white/[0.06] p-4 shadow-[0_18px_38px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-xl">
+          <div className="album-paper mb-3 rotate-[0.7deg] rounded-[22px] p-3 ring-2 ring-white/50">
             <div className="mb-3 flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-emerald-400/15 text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.16)]">
+              <span className="grid size-10 place-items-center rounded-xl bg-[#0f6a64] text-[#fff2c0] shadow-[0_4px_0_#17345a]">
                 <Wifi className="size-5" />
               </span>
               <div>
-                <p className="font-display text-sm font-black tracking-wide text-white">Online Canlı Rekabet</p>
-                <p className="text-xs font-semibold text-slate-500">2 cihaz, aynı 10 futbolcu, 60 saniye</p>
+                <p className="font-display text-base font-black tracking-wide text-[#17345a]">Online Canlı Rekabet</p>
+                <p className="text-xs font-bold text-[#6d5b38]">2 cihaz, aynı 10 futbolcu, 60 saniye</p>
               </div>
             </div>
 
@@ -1554,7 +1554,7 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
                 onChange={(event) => setPlayerName(event.target.value)}
                 placeholder="Oyuncu adın"
                 maxLength={16}
-                className="h-11 rounded-2xl bg-black/20 px-3 font-display text-sm font-black tracking-wide text-white outline-none ring-1 ring-white/5 transition duration-300 ease-out placeholder:text-slate-600 focus:ring-emerald-300/40"
+                className="h-11 rounded-xl bg-[#fff8dc] px-3 font-display text-base font-black tracking-wide text-[#17345a] outline-none ring-2 ring-[#17345a]/20 transition duration-300 ease-out placeholder:text-[#8b7a4f] focus:ring-[#c73031]/55"
               />
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <input
@@ -1563,13 +1563,13 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
                   placeholder="Oda kodu"
                   inputMode="numeric"
                   maxLength={4}
-                  className="h-11 rounded-2xl bg-black/20 px-3 font-display text-sm font-black tracking-wider text-white outline-none ring-1 ring-white/5 transition duration-300 ease-out placeholder:text-slate-600 focus:ring-emerald-300/40"
+                  className="h-11 rounded-xl bg-[#fff8dc] px-3 font-display text-base font-black tracking-wider text-[#17345a] outline-none ring-2 ring-[#17345a]/20 transition duration-300 ease-out placeholder:text-[#8b7a4f] focus:ring-[#c73031]/55"
                 />
                 <button
                   type="button"
                   onClick={handleJoinRoom}
                   disabled={isOnlineBusy}
-                  className="grid h-11 w-12 place-items-center rounded-2xl bg-indigo-400/16 text-indigo-100 shadow-[0_0_20px_rgba(129,140,248,0.14)] transition duration-300 ease-out active:scale-95 disabled:opacity-45"
+                  className="grid h-11 w-12 place-items-center rounded-xl bg-[#17345a] text-[#fff2c0] shadow-[0_4px_0_#c73031] transition duration-300 ease-out active:translate-y-1 disabled:opacity-45"
                   aria-label="Odaya katıl"
                   title="Odaya katıl"
                 >
@@ -1580,16 +1580,16 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
                 type="button"
                 onClick={handleCreateRoom}
                 disabled={isOnlineBusy}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-emerald-400 font-display text-sm font-black tracking-wider text-slate-950 shadow-[0_0_24px_rgba(16,185,129,0.32)] transition duration-300 ease-out active:scale-[0.98] disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#f4bd2e] font-display text-base font-black tracking-wider text-[#17345a] shadow-[0_5px_0_#c73031] transition duration-300 ease-out active:translate-y-1 disabled:opacity-50"
               >
                 <Play className="size-4" />
                 Oda Oluştur
               </button>
-              {onlineError ? <p className="text-xs font-bold text-red-300">{onlineError}</p> : null}
+              {onlineError ? <p className="rounded-lg bg-[#c73031] px-2 py-1 text-xs font-black text-[#fff2c0]">{onlineError}</p> : null}
             </div>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-2 pb-3">
             {modes.map((mode) => {
               const Icon = mode.icon;
               const playerCount = getModePlayers(mode).length;
@@ -1599,17 +1599,17 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
                   key={mode.id}
                   type="button"
                   onClick={() => onStart(mode)}
-                  className="group rounded-[26px] bg-white/[0.055] p-4 text-left shadow-[0_18px_38px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-xl transition duration-300 ease-out hover:bg-white/[0.085] hover:shadow-[0_0_30px_rgba(16,185,129,0.18)] active:scale-[0.99]"
+                  className="album-paper group rounded-[22px] p-4 text-left ring-2 ring-white/45 transition duration-300 ease-out hover:rotate-[-1deg] active:scale-[0.99]"
                 >
                   <span className="flex items-center gap-3">
-                    <span className="grid size-11 place-items-center rounded-2xl bg-emerald-400/12 text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.12)] transition duration-300 ease-out group-hover:bg-emerald-400 group-hover:text-slate-950">
+                    <span className="grid size-11 place-items-center rounded-xl bg-[#c73031] text-[#fff2c0] shadow-[0_4px_0_#17345a] transition duration-300 ease-out group-hover:bg-[#f4bd2e] group-hover:text-[#17345a]">
                       <Icon className="size-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-display text-base font-black tracking-wide text-white">{mode.title}</span>
-                      <span className="mt-1 block text-xs font-semibold text-slate-500">{mode.description}</span>
+                      <span className="block font-display text-lg font-black tracking-wide text-[#17345a]">{mode.title}</span>
+                      <span className="mt-1 block text-xs font-bold text-[#6d5b38]">{mode.description}</span>
                     </span>
-                    <span className="rounded-full bg-black/18 px-2.5 py-1 font-display text-xs font-black tracking-wide text-slate-200">
+                    <span className="rounded-full bg-[#17345a] px-2.5 py-1 font-display text-xs font-black tracking-wide text-[#fff2c0] shadow-[0_3px_0_#c73031]">
                       {playerCount}
                     </span>
                   </span>
@@ -1625,12 +1625,12 @@ function ModeSelectScreen({ modes, onOnlineSession, onStart, onToggleTimeAttack,
 
 function ScoreBadge({ score }) {
   return (
-    <div className="rounded-2xl bg-black/16 px-3 py-2 text-right shadow-[0_0_24px_rgba(99,102,241,0.14)] backdrop-blur-xl">
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase text-indigo-200">
+    <div className="sticker-cut rotate-[2deg] rounded-xl px-3 py-2 text-right">
+      <div className="flex items-center gap-1.5 text-[11px] font-black uppercase text-[#c73031]">
         <Trophy className="size-3.5" />
         Skor
       </div>
-      <p className="font-display text-2xl font-black leading-none tracking-wider text-white">{score}</p>
+      <p className="font-display text-3xl font-black leading-none tracking-wider text-[#17345a]">{score}</p>
     </div>
   );
 }
@@ -1638,17 +1638,17 @@ function ScoreBadge({ score }) {
 function Lives({ lives }) {
   return (
     <div
-      className="flex items-center gap-1.5 rounded-full bg-black/18 px-3 py-1.5 backdrop-blur-xl"
+      className="inline-flex items-center gap-1.5 rounded-full bg-[#fff2c0] px-3 py-1.5 text-[#17345a] shadow-[0_3px_0_#c73031]"
       aria-label={`Can: ${lives}`}
     >
-      <span className="mr-1 text-[11px] font-black uppercase tracking-[0.12em] text-red-100/80">Can</span>
+      <span className="mr-1 text-[11px] font-black uppercase tracking-[0.12em] text-[#17345a]">Can</span>
       {Array.from({ length: INITIAL_LIVES }).map((_, index) => (
         <Heart
           key={index}
           className={`size-4 transition duration-300 ease-out ${
             index < lives
-              ? "fill-red-400 text-red-300 drop-shadow-[0_0_8px_rgba(248,113,113,0.9)]"
-              : "fill-slate-700/40 text-slate-700"
+              ? "fill-[#c73031] text-[#c73031]"
+              : "fill-[#b8a777] text-[#b8a777]"
           }`}
         />
       ))}
@@ -1658,8 +1658,8 @@ function Lives({ lives }) {
 
 function HintRightsBadge({ hintRights }) {
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full bg-yellow-300/12 px-2.5 py-1.5 font-display text-xs font-black tracking-wide text-yellow-100 shadow-[0_0_18px_rgba(250,204,21,0.16)] backdrop-blur-xl">
-      <Lightbulb className="size-3.5 fill-yellow-200/70 text-yellow-100" />
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-[#f4bd2e] px-2.5 py-1.5 font-display text-xs font-black tracking-wide text-[#17345a] shadow-[0_3px_0_#c73031]">
+      <Lightbulb className="size-3.5 fill-[#17345a]/70 text-[#17345a]" />
       x{hintRights}
     </div>
   );
@@ -1669,13 +1669,13 @@ function WrongAttemptsBadge({ wrongAttempts }) {
   const remaining = Math.max(0, QUESTION_WRONG_ATTEMPTS - wrongAttempts);
 
   return (
-    <div className="inline-flex items-center gap-1 rounded-full bg-red-400/10 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-red-100/85 shadow-[0_0_16px_rgba(248,113,113,0.12)] backdrop-blur-xl">
+    <div className="inline-flex items-center gap-1 rounded-full bg-[#17345a] px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wide text-[#fff2c0] shadow-[0_3px_0_#c73031]">
       Hak
       {Array.from({ length: QUESTION_WRONG_ATTEMPTS }).map((_, index) => (
         <XCircle
           key={index}
           className={`size-3.5 transition duration-300 ease-out ${
-            index < remaining ? "fill-red-400/80 text-red-200 drop-shadow-[0_0_7px_rgba(248,113,113,0.65)]" : "text-slate-700"
+            index < remaining ? "fill-[#c73031] text-[#fff2c0]" : "text-[#7f8a9c]"
           }`}
         />
       ))}
@@ -1686,7 +1686,7 @@ function WrongAttemptsBadge({ wrongAttempts }) {
 function DifficultyBadge({ stage }) {
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-display text-xs font-black tracking-wide backdrop-blur-xl ${stage.badgeClass}`}
+      className="inline-flex items-center gap-2 rounded-full bg-[#fff2c0] px-3 py-1.5 font-display text-xs font-black tracking-wide text-[#17345a] shadow-[0_3px_0_#0f6a64]"
       title={`Skor aralığı: ${stage.range}`}
     >
       <span className={`size-2 rounded-full ${stage.dotClass}`} />
@@ -1698,9 +1698,9 @@ function DifficultyBadge({ stage }) {
 function LevelUpToast({ message }) {
   return (
     <div className="pointer-events-none absolute inset-x-4 top-24 z-30 flex justify-center">
-      <div className="animate-level-up rounded-2xl bg-slate-950/88 px-5 py-3 text-center shadow-[0_0_40px_rgba(16,185,129,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">Seviye Atladın!</p>
-        <p className="mt-1 font-display text-lg font-black tracking-wide text-white">{message.replace("Seviye Atladın! ", "")}</p>
+      <div className="album-paper animate-level-up rotate-[-1deg] rounded-2xl px-5 py-3 text-center ring-2 ring-white/60">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#c73031]">Seviye Atladın!</p>
+        <p className="mt-1 font-display text-xl font-black tracking-wide text-[#17345a]">{message.replace("Seviye Atladın! ", "")}</p>
       </div>
     </div>
   );
@@ -1711,17 +1711,17 @@ function TimerBar({ timeLeft, totalTime }) {
 
   return (
     <div className="mt-3">
-      <div className="mb-1.5 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+      <div className="mb-1.5 flex items-center justify-between text-[11px] font-black uppercase tracking-[0.12em] text-[#fff2c0]">
         <span className="inline-flex items-center gap-1.5">
-          <Clock3 className="size-3.5 text-emerald-300" />
+          <Clock3 className="size-3.5 text-[#f4bd2e]" />
           Süre
         </span>
-        <span className={timeLeft <= 7 ? "text-red-300" : "text-slate-300"}>{timeLeft}s</span>
+        <span className={timeLeft <= 7 ? "text-[#ffcbcb]" : "text-[#fff2c0]"}>{timeLeft}s</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+      <div className="h-2 overflow-hidden rounded-full bg-[#17345a] shadow-[0_2px_0_#c73031]">
         <div
           className={`h-full rounded-full transition-all duration-1000 ${
-            timeLeft <= 7 ? "bg-red-400" : "bg-emerald-400"
+            timeLeft <= 7 ? "bg-[#c73031]" : "bg-[#f4bd2e]"
           }`}
           style={{ width: `${percentage}%` }}
         />
@@ -1768,16 +1768,16 @@ const GuessBoard = memo(function GuessBoard({ selectedTiles, status, onSlotClear
               type="button"
               onClick={() => onSlotClear(index)}
               disabled={!tile || isSuccess || isWrong}
-              className={`aspect-square min-h-7 rounded-xl border font-display font-black tracking-wider transition duration-300 ease-out active:scale-95 ${
+              className={`aspect-square min-h-7 rounded-xl border-2 font-display font-black tracking-wider transition duration-300 ease-out active:scale-95 ${
                 row.length > 10 ? "text-xs sm:text-sm" : "text-base sm:text-lg"
               } ${
                 isSuccess
-                  ? "border-emerald-200/80 bg-emerald-400 text-slate-950 shadow-[0_0_26px_rgba(52,211,153,0.66)]"
+                  ? "border-[#17345a] bg-[#f4bd2e] text-[#17345a] shadow-[0_5px_0_#c73031]"
                   : isWrong
-                    ? "border-red-300/80 bg-red-500/85 text-white shadow-lg shadow-red-950/40"
+                    ? "border-[#17345a] bg-[#c73031] text-[#fff2c0] shadow-[0_5px_0_#17345a]"
                     : tile
-                      ? "border-violet-300/60 bg-indigo-500/25 text-white shadow-[0_0_22px_rgba(139,92,246,0.34)]"
-                      : "border-dashed border-emerald-300/55 bg-emerald-500/[0.11] text-emerald-100 shadow-inner shadow-emerald-950/30"
+                      ? "border-[#17345a] bg-[#fff8dc] text-[#17345a] shadow-[0_5px_0_rgba(23,52,90,0.28)]"
+                      : "border-dashed border-[#17345a]/45 bg-[#fff8dc]/45 text-[#17345a]"
               }`}
               style={isSuccess ? { animation: `success-bounce 520ms ${index * SUCCESS_STAGGER_MS}ms both` } : undefined}
               aria-label={tile ? `${tile.letter} harfini geri al` : `${index + 1}. boş kutu`}
@@ -1809,7 +1809,7 @@ const LetterBank = memo(function LetterBank({ tiles, selectedTileIds, disabled, 
             type="button"
             onClick={() => onSelect(tile)}
             disabled={disabled || isUsed}
-            className="aspect-[1.08] rotate-[var(--tile-rotation)] rounded-2xl border border-emerald-300/15 border-b-4 border-b-slate-950 bg-slate-800 font-display text-lg font-black tracking-wider text-emerald-100 shadow-[0_0_18px_rgba(16,185,129,0.14),0_12px_0_rgba(2,6,23,0.58)] transition duration-300 ease-out hover:rotate-0 hover:bg-slate-700 hover:text-white hover:shadow-[0_0_24px_rgba(16,185,129,0.3),0_12px_0_rgba(2,6,23,0.48)] active:translate-y-1 active:rotate-0 active:border-b-0 active:shadow-[0_0_16px_rgba(16,185,129,0.28)] disabled:cursor-not-allowed disabled:rotate-0 disabled:border-white/5 disabled:border-b-slate-950/30 disabled:bg-slate-900/42 disabled:text-slate-600 disabled:shadow-none"
+            className="sticker-cut aspect-[1.08] rotate-[var(--tile-rotation)] rounded-xl border-2 border-[#17345a]/35 border-b-4 border-b-[#17345a] font-display text-xl font-black tracking-wider text-[#17345a] transition duration-300 ease-out hover:rotate-0 hover:bg-[#f4bd2e] active:translate-y-1 active:rotate-0 active:border-b-0 disabled:cursor-not-allowed disabled:rotate-0 disabled:border-[#8b7a4f]/25 disabled:bg-[#d8c999] disabled:text-[#8b7a4f] disabled:shadow-none"
             style={{ "--tile-rotation": TILE_ROTATIONS[index % TILE_ROTATIONS.length] }}
             aria-label={`${tile.letter} harfini seç`}
           >
@@ -1836,7 +1836,7 @@ const HintPanel = memo(function HintPanel({ disabled, hintLevel, hintRights, onR
         type="button"
         onClick={onReveal}
         disabled={disabled}
-        className="grid size-12 shrink-0 place-items-center rounded-full bg-white/[0.07] text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out hover:bg-emerald-400/18 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
+        className="sticker-cut grid size-12 shrink-0 place-items-center rounded-xl text-[#17345a] transition duration-300 ease-out hover:rotate-[-2deg] active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-45"
         aria-label={hintLevel >= 2 ? "İpucu tamamlandı" : hintTitle}
         title={hintLevel >= 2 ? "İpucu tamamlandı" : hintTitle}
       >
@@ -1848,9 +1848,9 @@ const HintPanel = memo(function HintPanel({ disabled, hintLevel, hintRights, onR
 
 const HintMetric = memo(function HintMetric({ isVisible, label, value }) {
   return (
-    <div className="min-w-0 rounded-full bg-white/[0.055] px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition duration-300 ease-out">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100/50">{label}</p>
-      <p className={`mt-0.5 truncate font-display text-sm font-black tracking-wide transition duration-300 ease-out ${isVisible ? "text-white drop-shadow-[0_0_8px_rgba(52,211,153,0.25)]" : "text-slate-500"}`}>
+    <div className="sticker-cut min-w-0 rotate-[-0.5deg] rounded-xl px-3 py-2 transition duration-300 ease-out">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#c73031]">{label}</p>
+      <p className={`mt-0.5 truncate font-display text-base font-black tracking-wide transition duration-300 ease-out ${isVisible ? "text-[#17345a]" : "text-[#8b7a4f]"}`}>
         {isVisible ? value : "Kilitli"}
       </p>
     </div>
@@ -1865,7 +1865,7 @@ function IconActionButton({ children, className = "", disabled, label, onClick }
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className={`absolute grid size-12 place-items-center rounded-full bg-white/[0.07] text-emerald-100 shadow-[0_0_22px_rgba(16,185,129,0.18),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl transition duration-300 ease-out hover:bg-white/[0.12] hover:text-white active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
+      className={`sticker-cut absolute grid size-12 place-items-center rounded-xl text-[#17345a] transition duration-300 ease-out hover:rotate-[-2deg] active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-35 ${className}`}
     >
       {children}
     </button>
@@ -1878,7 +1878,7 @@ function ShimmerButton({ onClick, disabled }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="absolute bottom-0 left-1/2 inline-flex h-12 -translate-x-1/2 overflow-hidden rounded-full bg-emerald-400 px-4 font-display text-xs font-black tracking-wider text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.42)] transition duration-300 ease-out hover:bg-emerald-300 active:scale-95 disabled:cursor-wait disabled:opacity-70"
+      className="absolute bottom-0 left-1/2 inline-flex h-12 -translate-x-1/2 overflow-hidden rounded-xl bg-[#f4bd2e] px-4 font-display text-xs font-black tracking-wider text-[#17345a] shadow-[0_5px_0_#c73031] transition duration-300 ease-out active:translate-y-1 disabled:cursor-wait disabled:opacity-70"
     >
       <span className="absolute inset-y-0 left-0 w-1/2 animate-shimmer bg-gradient-to-r from-transparent via-white/45 to-transparent" />
       <span className="relative z-10 flex w-full items-center justify-center gap-2">
@@ -1945,11 +1945,13 @@ function GameOver({ lives, modeTitle, onMenu, onRestart, score, timeAttack, tota
 function PitchBackdrop() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_32%,rgba(16,185,129,0.3),rgba(6,95,70,0.16)_36%,transparent_70%)]" />
-      <div className="absolute inset-x-8 top-32 h-48 rounded-[40px] bg-emerald-400/[0.045] shadow-[inset_0_0_64px_rgba(52,211,153,0.12)]" />
-      <div className="absolute left-1/2 top-32 h-48 w-px -translate-x-1/2 bg-emerald-100/10" />
-      <div className="absolute left-1/2 top-44 size-20 -translate-x-1/2 rounded-full bg-emerald-100/[0.035] shadow-[inset_0_0_0_1px_rgba(209,250,229,0.09)]" />
-      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/44 via-black/12 to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_24%,rgba(244,189,46,0.22),transparent_34%),radial-gradient(circle_at_50%_86%,rgba(199,48,49,0.16),transparent_34%)]" />
+      <div className="absolute inset-x-7 top-32 h-48 rotate-[-1deg] rounded-[30px] bg-[#fff2c0]/12 shadow-[inset_0_0_0_2px_rgba(255,242,192,0.16)]" />
+      <div className="absolute left-1/2 top-32 h-48 w-px -translate-x-1/2 rotate-[-1deg] bg-[#fff2c0]/18" />
+      <div className="absolute left-1/2 top-44 size-20 -translate-x-1/2 rounded-full bg-[#fff2c0]/8 shadow-[inset_0_0_0_2px_rgba(255,242,192,0.16)]" />
+      <div className="absolute -left-12 bottom-24 h-28 w-52 rotate-[-10deg] rounded-[28px] bg-[#c73031]/16" />
+      <div className="absolute -right-10 bottom-32 h-24 w-48 rotate-[12deg] rounded-[28px] bg-[#f4bd2e]/16" />
+      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#10213d] via-[#10213d]/44 to-transparent" />
     </div>
   );
 }

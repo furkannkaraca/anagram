@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Oxanium", "Rajdhani", "system-ui"],
-        body: ["Rajdhani", "Oxanium", "system-ui"],
+        display: ["Bebas Neue", "Barlow Condensed", "system-ui"],
+        body: ["Barlow Condensed", "system-ui"],
       },
       animation: {
         "level-up": "level-up 1.5s ease-out both",
